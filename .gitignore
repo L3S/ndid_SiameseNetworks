@@ -1,0 +1,8 @@
+# garbadge
+.idea
+__pycache__
+
+# non-persistend data
+data
+models
+logs
