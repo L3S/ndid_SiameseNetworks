@@ -1,7 +1,7 @@
 import numpy as np
 import _pickle as pickle
 import matplotlib.pyplot as plt
-from common import get_datadir, process_images
+from src.common import get_datadir, process_images
 from tensorflow.keras import datasets
 from tensorflow import data
 
@@ -73,7 +73,7 @@ def produce_tuples():
             negative_labels[i * tuples_per_label + j] = i
             negative_images[i * tuples_per_label + j] = labels_train[i, tuples_per_label * 2 + j]
 
-    # we need to ensure we use random kind of negative images, but without images from anchor label
+    # we need to ensure we use random labels, but without images from anchor label
     shuffle_arrays([negative_labels, negative_images])
 
     for i in range(total_labels):
@@ -116,11 +116,7 @@ def load_tuples():
 
 
 def prepare_dataset():
-    (anchor_images, anchor_labels), (positive_images, positive_labels), (negative_images, negative_labels) = load_tuples()
-
-    # anchor_ds = data.Dataset.from_tensor_slices((anchor_images, anchor_labels))
-    # positive_ds = data.Dataset.from_tensor_slices((positive_images, positive_labels))
-    # negative_ds = data.Dataset.from_tensor_slices((negative_images, negative_labels))
+    (anchor_images, anchor_labels), (positive_images, positive_labels), (negative_images, negative_labels) = produce_tuples()
 
     anchor_ds = data.Dataset.from_tensor_slices(anchor_images)
     positive_ds = data.Dataset.from_tensor_slices(positive_images)
@@ -131,7 +127,7 @@ def prepare_dataset():
     negative_ds = (negative_ds.map(process_images).batch(batch_size=32, drop_remainder=True))
 
     dataset = data.Dataset.zip((anchor_ds, positive_ds, negative_ds))
-    dataset = dataset.shuffle(buffer_size=1024)
+    # dataset = dataset.shuffle(buffer_size=1024)
     return dataset
 
 
