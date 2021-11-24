@@ -2,6 +2,7 @@ from src.common import *
 import tensorflow as tf
 from tensorflow.keras import layers, callbacks, datasets, Sequential
 
+tensorboard_cb = callbacks.TensorBoard(get_logdir("alexnet/fit"))
 
 class AlexNetModel(Sequential):
     def __init__(self):
@@ -36,6 +37,20 @@ class AlexNetModel(Sequential):
             layers.Dense(name='unfreeze', units=10, activation='softmax')
         ])
 
+    def compile(self, optimizer=tf.optimizers.SGD(learning_rate=0.001),
+                loss='sparse_categorical_crossentropy',
+                metrics=['accuracy'],
+                loss_weights=None, weighted_metrics=None, run_eagerly=None, steps_per_execution=None, **kwargs):
+        super().compile(optimizer, loss, metrics, loss_weights, weighted_metrics, run_eagerly, steps_per_execution, **kwargs)
+
+    def fit(self, x=None, y=None, batch_size=None, epochs=50, verbose='auto', callbacks=[tensorboard_cb], validation_split=0.,
+            validation_data=None, shuffle=True, class_weight=None, sample_weight=None, initial_epoch=0,
+            steps_per_epoch=None, validation_steps=None, validation_batch_size=None, validation_freq=1,
+            max_queue_size=10, workers=1, use_multiprocessing=False):
+        return super().fit(x, y, batch_size, epochs, verbose, callbacks, validation_split, validation_data, shuffle,
+                           class_weight, sample_weight, initial_epoch, steps_per_epoch, validation_steps,
+                           validation_batch_size, validation_freq, max_queue_size, workers, use_multiprocessing)
+
     @staticmethod
     def x_dataset():
         (train_images, train_labels), (test_images, test_labels) = datasets.cifar10.load_data()
@@ -62,11 +77,3 @@ class AlexNetModel(Sequential):
         test_ds = (test_ds.map(process_images_couple).shuffle(buffer_size=train_ds_size).batch(batch_size=32, drop_remainder=True))
         validation_ds = (validation_ds.map(process_images_couple).shuffle(buffer_size=train_ds_size).batch(batch_size=32, drop_remainder=True))
         return train_ds, test_ds, validation_ds
-
-    def x_train(self, train_ds, validation_ds):
-        tensorboard_cb = callbacks.TensorBoard(get_logdir("alexnet/fit"))
-
-        # optimizer='adam', SGD W
-        self.compile(loss='sparse_categorical_crossentropy', optimizer=tf.optimizers.SGD(learning_rate=0.001), metrics=['accuracy'])
-        self.summary()
-        self.fit(train_ds, epochs=50, validation_data=validation_ds, validation_freq=1, callbacks=[tensorboard_cb])
