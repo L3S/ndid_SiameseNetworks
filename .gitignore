@@ -3,6 +3,7 @@
 __pycache__
 
 # non-persistend data
-data
-models
-logs
+/data
+/datasets
+/models
+/logs
