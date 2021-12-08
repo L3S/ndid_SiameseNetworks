@@ -1,9 +1,9 @@
-import numpy as np
-from keras import Model
-import tensorflow as tf
-from tensorflow.keras import datasets
+import sys
+sys.path.append("..")
+
+from src.data.embeddings import *
 from src.model.alexnet import AlexNetModel
-from src.utils.common import get_modeldir, process_images_couple, get_datadir
+from src.utils.common import get_modeldir
 
 model_name = 'alexnet_cifar10-new'
 train_ds, test_ds, validation_ds = AlexNetModel.x_dataset()
@@ -27,7 +27,10 @@ alexnet.load_weights(get_modeldir(model_name + '.h5'))
 # alexnet.save(get_modeldir(model_name + '.tf'))
 
 # evaluate
-alexnet.evaluate(validation_ds)
+# alexnet.evaluate(validation_ds)
 # res = alexnet.predict(validation_ds)
+
+embeddings, labels = calc_embeddings(alexnet)
+save_embeddings(embeddings, labels)
 
 print('done')

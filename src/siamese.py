@@ -1,3 +1,6 @@
+import sys
+sys.path.append("..")
+
 from utils.common import *
 from data.cifar10_tuples import *
 from utils.distance import *
