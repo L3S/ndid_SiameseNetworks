@@ -1,4 +1,4 @@
-from src.common import *
+from src.utils.common import *
 import tensorflow as tf
 from tensorflow.keras import layers, callbacks, datasets, Sequential
 

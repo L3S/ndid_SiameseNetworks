@@ -1,7 +1,7 @@
 import numpy as np
 import _pickle as pickle
 import matplotlib.pyplot as plt
-from src.common import get_datadir, process_images
+from src.utils.common import get_datadir, process_images
 from tensorflow.keras import datasets
 from tensorflow import data
 

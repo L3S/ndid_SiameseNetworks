@@ -1,6 +1,9 @@
-from tensorflow.keras import models
-from model.alexnet import AlexNetModel
-from common import get_modeldir
+import numpy as np
+from keras import Model
+import tensorflow as tf
+from tensorflow.keras import datasets
+from src.model.alexnet import AlexNetModel
+from src.utils.common import get_modeldir, process_images_couple, get_datadir
 
 model_name = 'alexnet_cifar10-new'
 train_ds, test_ds, validation_ds = AlexNetModel.x_dataset()
