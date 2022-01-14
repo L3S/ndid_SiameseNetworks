@@ -5,7 +5,7 @@ from src.data.embeddings import *
 from src.model.alexnet import AlexNetModel
 from src.utils.common import get_modeldir
 
-model_name = 'alexnet_cifar10-new'
+model_name = 'alexnet_cifar10'
 train_ds, test_ds, validation_ds = AlexNetModel.x_dataset()
 
 # load model

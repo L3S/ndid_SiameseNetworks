@@ -2,21 +2,19 @@ import sys
 sys.path.append("..")
 
 from utils.common import *
-from data.cifar10_tuples import *
 from utils.distance import *
+from src.data.embeddings import *
 from src.model.alexnet import AlexNetModel
 from tensorflow.keras import layers, Model
 
-model_suffix = '-new'
-
 alexnet = AlexNetModel()
 alexnet.compile()
-alexnet.load_weights(get_modeldir('alexnet_cifar10-new.h5'))
+alexnet.load_weights(get_modeldir('alexnet_cifar10.h5'))
 
 for layer in alexnet.layers:
     layer.trainable = False
 
-# Philipo Siemese model
+# Filippo's Siemese model
 
 ## Model hyperparters
 EMBEDDING_VECTOR_DIMENSION = 4096
@@ -46,7 +44,11 @@ NUM_EPOCHS = 3
 siamese.compile(loss=loss(margin=0.05), optimizer="RMSprop")
 siamese.summary()
 
-embeddings_ds = tf.data.experimental.load(get_datadir('embeddings'))
+embeddings, embedding_labels = load_embeddings()
+embeddings_ds = tf.data.Dataset.zip((
+    tf.data.Dataset.from_tensor_slices(embeddings),
+    tf.data.Dataset.from_tensor_slices(embedding_labels)
+))
 embeddings_ds = embeddings_ds.cache().shuffle(1000).repeat()
 
 @tf.function
