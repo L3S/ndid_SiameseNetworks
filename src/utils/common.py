@@ -21,7 +21,7 @@ def process_images(image):
     return image
 
 
-def _show_subplot(nrows, ncols, index, image, title = None):
+def subplot_image(nrows, ncols, index, image, title = None):
     ax = plt.subplot(nrows, ncols, index)
     ax.imshow(image)
     if title is not None:
@@ -32,15 +32,15 @@ def _show_subplot(nrows, ncols, index, image, title = None):
 def plot_grid25(dataset):
     plt.figure(figsize=(20, 20))
     for i, (image, label) in enumerate(dataset.take(25)):
-        _show_subplot(5, 5, i + 1, image, CIFAR10_CLASS_NAMES[label.numpy()[0]])
+        subplot_image(5, 5, i + 1, image, CIFAR10_CLASS_NAMES[label.numpy()[0]])
     plt.show()
 
 
 def plot_tuple(anchor, positive, negative):
     plt.figure(figsize=(9, 3))
-    _show_subplot(1, 3, 1, anchor)
-    _show_subplot(1, 3, 2, positive)
-    _show_subplot(1, 3, 3, negative)
+    subplot_image(1, 3, 1, anchor)
+    subplot_image(1, 3, 2, positive)
+    subplot_image(1, 3, 3, negative)
     plt.show()
 
 
