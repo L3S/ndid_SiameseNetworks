@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import cv2
 
-from src.utils.common import subplot_image
+from src.utils.common import *
 
 
 def extract_hsv(image):
@@ -10,14 +10,15 @@ def extract_hsv(image):
     hsv = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
     # The ranges of the 3 HSV channels in opencv are 0-180, 0-256, 0-256 respectively
     # Bins is set to 1365, so that each picture can be represented by a 4000-dimensional vector
-    histh = cv2.calcHist([hsv], [0], None, [1365], [0, 180])
-    hists = cv2.calcHist([hsv], [1], None, [1365], [0, 256])
-    histv = cv2.calcHist([hsv], [2], None, [1365], [0, 256])
+    histh = cv2.calcHist([hsv], [0], None, [170], [0, 180])
+    hists = cv2.calcHist([hsv], [1], None, [171], [0, 256])
+    histv = cv2.calcHist([hsv], [2], None, [171], [0, 256])
     # normalize the histogram
     histh /= histh.sum()
     hists /= hists.sum()
     histv /= histv.sum()
-    hist_array = np.array([histh, hists, histv])
+    hist_array = np.append(histh, hists)
+    hist_array = np.append(hist_array, histv)
     # return the flattened histogram as the feature vector
     return histh, hists, histv, hist_array.flatten()
 
@@ -25,9 +26,12 @@ def extract_hsv(image):
 def plot_hsv(dataset):
     plt.figure(figsize=(20, 20))
     for i, (image, label) in enumerate(dataset.take(3)):
-        subplot_image(3, 2, i * 2 + 1, image, "Original image")
+        # from smaller image only smaller number of key points can be extracted
+        img = cv2.resize(image.numpy(), target_shape)
 
-        hist0_s, hist1_s, hist2_s, hist_s = extract_hsv(image.numpy())
+        subplot_image(3, 2, i * 2 + 1, img, "Original image")
+
+        hist0_s, hist1_s, hist2_s, hist_s = extract_hsv(img)
         # print('the length of histogram of the sample', len(hist_s))
 
         # subplot_image(3, 2, i * 2 + 2, image, "HSV Histogram")

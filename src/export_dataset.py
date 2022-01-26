@@ -58,7 +58,7 @@ def export_embeddings():
         # write the header
         writer.writerow(header)
 
-        seamese = models.load_model(get_modeldir('seamese1.tf'))
+        seamese = models.load_model(get_modeldir('seamese_cifar10.tf'))
 
         embedding_vds = (cifar10_vds.map(process_images_couple).batch(batch_size=32, drop_remainder=False))
         print('predicting embeddings')
@@ -66,12 +66,12 @@ def export_embeddings():
         print('embeddings done')
 
         for i, (label) in enumerate(cifar10_labels):
-            label_str = label
+            label_str = ','.join(map(str, label))
             value_str = ','.join(map(str, embeddings[i]))
             writer.writerow([i, label_str, value_str])
 
 
 # export_hsv()
-export_sift()
-# export_embeddings()
+# export_sift()
+export_embeddings()
 print('done')

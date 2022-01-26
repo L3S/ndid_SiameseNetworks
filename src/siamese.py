@@ -79,4 +79,4 @@ embedding = alexnet(im_input)
 image_vector = projection_model(embedding)
 inference_model = Model(inputs=im_input, outputs=image_vector)
 
-inference_model.save(get_modeldir('seamese1.tf'), save_format='tf', include_optimizer=False)
+inference_model.save(get_modeldir('seamese_cifar10.tf'), save_format='tf', include_optimizer=False)
