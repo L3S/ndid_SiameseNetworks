@@ -13,12 +13,29 @@ cifar10_images = np.concatenate([train_images, test_images])
 cifar10_labels = np.concatenate([train_labels, test_labels])
 cifar10_vds = tf.data.Dataset.from_tensor_slices((cifar10_images, cifar10_labels))
 
-# test HSV
-print('test HSV')
-plot_hsv(cifar10_vds)
+def print_resized(dataset):
+    plt.figure(figsize=(20, 20))
+    for i, (image, label) in enumerate(dataset.take(3)):
+        img_cv2 = cv2.resize(image.numpy(), target_shape)
 
-print('test SIFT')
-plot_sift(cifar10_vds)
+        # img_tf = tf.image.per_image_standardization(image)
+        img_tf = tf.image.resize(image, target_shape, method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+        img_tf = tf.cast(img_tf, tf.uint8)
+        # img_tf = tf.image.convert_image_dtype(img_tf, dtype=tf.uint8, saturate=False)
+
+        subplot_image(3, 3, i * 3 + 1, image.numpy(), "Original image")
+        subplot_image(3, 3, i * 3 + 2, img_cv2, "CV2 image")
+        subplot_image(3, 3, i * 3 + 3, img_tf.numpy(), "TF image")
+    plt.show()
+
+print_resized(cifar10_vds)
+
+# test HSV
+# print('test HSV')
+# plot_hsv(cifar10_vds)
+
+# print('test SIFT')
+# plot_sift(cifar10_vds)
 
 # 906, 1692, 1711, 2610, 3259, 3418, 3789, 4277, 4975, 5010, 5255, 5867, 5988, 6406, 7089, 7365, 8072
 # 8443, 8998, 9008, 9323, 9664, 9881, 9903, 9985, 10095, 11650, 13043, 13075, 13841, 14698, 15443

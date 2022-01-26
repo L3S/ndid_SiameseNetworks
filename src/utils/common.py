@@ -15,9 +15,10 @@ def process_images_couple(image, label):
 
 def process_images(image):
     # Normalize images to have a mean of 0 and standard deviation of 1
-    image = tf.image.per_image_standardization(image)
+    # image = tf.image.per_image_standardization(image)
     # Resize images from 32x32 to 277x277
-    image = tf.image.resize(image, target_shape)
+    image = tf.image.resize(image, target_shape, method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+    image = tf.cast(image, tf.uint8)
     return image
 
 
