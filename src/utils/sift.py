@@ -4,8 +4,9 @@ import cv2
 from src.utils.common import *
 
 
-def extract_sift(image):
-    sift = cv2.SIFT_create(8)
+def extract_sift(image, features=500):
+    # the result number of features is the number of keypoints * 128
+    sift = cv2.SIFT_create(features)
     # Calculate the keypoint and each point description of the image
     keypoints, features = sift.detectAndCompute(image, None)
     return keypoints, features

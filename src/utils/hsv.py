@@ -5,14 +5,14 @@ import cv2
 from src.utils.common import *
 
 
-def extract_hsv(image):
+def extract_hsv(image, bin0=256, bin1=256, bin2=256):
     """Extract a 3 color channels histogram from the HSV"""
     hsv = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
     # The ranges of the 3 HSV channels in opencv are 0-180, 0-256, 0-256 respectively
     # Bins is set to 1365, so that each picture can be represented by a 4000-dimensional vector
-    histh = cv2.calcHist([hsv], [0], None, [170], [0, 180])
-    hists = cv2.calcHist([hsv], [1], None, [171], [0, 256])
-    histv = cv2.calcHist([hsv], [2], None, [171], [0, 256])
+    histh = cv2.calcHist([hsv], [0], None, [bin0], [0, 180])
+    hists = cv2.calcHist([hsv], [1], None, [bin1], [0, 256])
+    histv = cv2.calcHist([hsv], [2], None, [bin2], [0, 256])
     # normalize the histogram
     histh /= histh.sum()
     hists /= hists.sum()

@@ -17,31 +17,31 @@ cifar10_images = np.concatenate([train_images, test_images])
 cifar10_labels = np.concatenate([train_labels, test_labels])
 cifar10_vds = tf.data.Dataset.from_tensor_slices((cifar10_images, cifar10_labels))
 
-def export_hsv():
+def export_hsv(bin0=256, bin1=256, bin2=256):
     header = ['ID', 'Label', 'HSV vector']
-    with open('../data/hsv.csv', 'w', encoding='UTF8', newline='') as f:
+    with open('../data/hsv_' + str(features) + '.csv', 'w', encoding='UTF8', newline='') as f:
         writer = csv.writer(f, delimiter=";")
         # write the header
         writer.writerow(header)
 
         for i, (image, label) in enumerate(cifar10_vds):
-            a, b, c, hist_array = extract_hsv(image.numpy())
+            img = process_images(image).numpy()
+            a, b, c, hist_array = extract_hsv(img, bin0, bin1, bin2)
             label_str = ','.join(map(str, label.numpy()))
             value_str = ','.join(map(str, hist_array))
             writer.writerow([i, label_str, value_str])
 
 
-def export_sift():
+def export_sift(features=8):
     header = ['ID', 'Label', 'SIFT descriptors']
-    with open('../data/sift.csv', 'w', encoding='UTF8', newline='') as f:
+    with open('../data/sift_' + str(features) + '.csv', 'w', encoding='UTF8', newline='') as f:
         writer = csv.writer(f, delimiter=";")
         # write the header
         writer.writerow(header)
 
         for i, (image, label) in enumerate(cifar10_vds):
-            # from smaller image only smaller number of key points can be extracted
-            img = cv2.resize(image.numpy(), (230, 230))
-            keypoints, features = extract_sift(img)
+            img = process_images(image).numpy()
+            keypoints, features = extract_sift(img, features)
             label_str = ','.join(map(str, label.numpy()))
             if features is not None:
                 value_str = ','.join(map(str, features.flatten()))
@@ -70,7 +70,8 @@ def export_embeddings():
             value_str = ','.join(map(str, embeddings[i]))
             writer.writerow([i, label_str, value_str])
 
-
+# hsv 170, 171, 171
+# 512, 1024, 2048, 4096
 # export_hsv()
 # export_sift()
 export_embeddings()
