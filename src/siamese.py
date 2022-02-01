@@ -10,6 +10,7 @@ from tensorflow.keras import layers, Model
 alexnet = AlexNetModel()
 alexnet.compile()
 alexnet.load_weights(get_modeldir('alexnet_cifar10.h5'))
+alexnet = Model(inputs=alexnet.input, outputs=alexnet.layers[-2].output)
 
 for layer in alexnet.layers:
     layer.trainable = False
@@ -79,4 +80,4 @@ embedding = alexnet(im_input)
 image_vector = projection_model(embedding)
 inference_model = Model(inputs=im_input, outputs=image_vector)
 
-inference_model.save(get_modeldir('seamese_cifar10.tf'), save_format='tf', include_optimizer=False)
+inference_model.save(get_modeldir('seamese_cifar10_' + str(IMAGE_VECTOR_DIMENSIONS) + '.tf'), save_format='tf', include_optimizer=False)

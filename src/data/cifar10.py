@@ -1,9 +1,22 @@
 import numpy as np
 import _pickle as pickle
 import matplotlib.pyplot as plt
-from src.utils.common import get_datadir, process_images
+from src.utils.common import get_datadir, process_images, process_images_couple
 from tensorflow.keras import datasets
 from tensorflow import data
+import tensorflow as tf
+
+def cifar10_complete():
+    (train_images, train_labels), (test_images, test_labels) = datasets.cifar10.load_data()
+    images = np.concatenate([train_images, test_images])
+    labels = np.concatenate([train_labels, test_labels])
+    return tf.data.Dataset.from_tensor_slices((images, labels))
+
+
+def cifar10_complete_resized():
+    ds = cifar10_complete()
+    return ds.map(process_images_couple).prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
+
 
 def shuffle_arrays(arrays, set_seed=-1):
     """Shuffles arrays in-place, in the same order, along axis=0

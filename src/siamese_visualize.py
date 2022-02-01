@@ -6,11 +6,9 @@ from tqdm import tqdm
 sys.path.append("..")
 
 from utils.common import *
-from data.cifar10_tuples import *
-from utils.distance import *
+from src.data.cifar10 import *
 from src.data.embeddings import *
-from src.model.alexnet import AlexNetModel
-from tensorflow.keras import layers, Model
+from tensorflow.keras import layers
 
 def write_embeddings_for_tensorboard(image_vectors: list, labels: list , root_dir: Path):
     import csv
@@ -37,17 +35,13 @@ def write_embeddings_for_tensorboard(image_vectors: list, labels: list , root_di
     embedding.tensor_path = 'values.tsv'
     projector.visualize_embeddings(root_dir, config)
 
-inference_model = tf.keras.models.load_model(get_modeldir('seamese_cifar10.tf'), compile=False)
+inference_model = tf.keras.models.load_model(get_modeldir('seamese_cifar10_512.tf'), compile=False)
 
 NUM_SAMPLES_TO_DISPLAY = 10000
 LOG_DIR=Path('../logs')
 LOG_DIR.mkdir(exist_ok=True, parents=True)
 
-(train_images, train_labels), (test_images, test_labels) = datasets.cifar10.load_data()
-embedding_images = np.concatenate([train_images, test_images])
-embedding_labels = np.concatenate([train_labels, test_labels])
-
-embedding_vds = tf.data.Dataset.from_tensor_slices((embedding_images, embedding_labels))
+embedding_vds = cifar10_complete()
 val_ds = (embedding_vds
          .shuffle(500, seed=42)
          .take(NUM_SAMPLES_TO_DISPLAY)
