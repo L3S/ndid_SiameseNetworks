@@ -111,8 +111,8 @@ train_ds = train_ds.map(make_label_for_pair, num_parallel_calls=tf.data.AUTOTUNE
 
 ## Model hyperparters
 EMBEDDING_VECTOR_DIMENSION = 384
-IMAGE_VECTOR_DIMENSIONS = 128
-ACTIVATION_FN = 'tanh'  # same as in paper
+IMAGE_VECTOR_DIMENSIONS = 512
+ACTIVATION_FN = 'relu'  # same as in paper
 MARGIN = 0.005
 
 DST_MODEL_FNAME = get_modeldir(
@@ -209,11 +209,11 @@ siamese = Model(inputs=[emb_input_1, emb_input_2], outputs=computed_distance)
 ## Training hyperparameters (values selected randomly at the moment, would be easy to set up hyperparameter tuning wth Keras Tuner)
 ## We have 128 pairs for each epoch, thus in total we will have 128 x 2 x 1000 images to give to the siamese
 TRAIN_BATCH_SIZE = 128
-STEPS_PER_EPOCH = 1000
-NUM_EPOCHS = 3
+STEPS_PER_EPOCH = 3000
+NUM_EPOCHS = 10
 
 # TODO: If there's a need to adapt the learning rate, explicitly create the optimizer instance here and pass it into compile
-siamese.compile(loss=loss(margin=MARGIN), optimizer="RMSprop")
+siamese.compile(loss=loss(margin=MARGIN), optimizer=tf.keras.optimizers.Adam(learning_rate=0.001))
 siamese.summary()
 
 callbacks = [
@@ -270,7 +270,7 @@ def write_embeddings_for_tensorboard(image_vectors: list, labels: list, root_dir
 inference_model = tf.keras.models.load_model(DST_MODEL_FNAME, compile=False)
 
 NUM_SAMPLES_TO_DISPLAY = 10000
-LOG_DIR = Path('../logs_vit')
+LOG_DIR = Path('../logs_vit2')
 LOG_DIR.mkdir(exist_ok=True, parents=True)
 
 val_ds = (tfds.load(DATASET_NAME, split='test')
