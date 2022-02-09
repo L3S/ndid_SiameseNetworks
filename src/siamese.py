@@ -1,4 +1,5 @@
 import sys
+
 sys.path.append("..")
 
 from utils.common import *
@@ -26,7 +27,7 @@ emb_input_2 = layers.Input(EMBEDDING_VECTOR_DIMENSION)
 
 # projection model is the one to use for queries (put in a sequence after the embedding-generator model above)
 projection_model = tf.keras.models.Sequential([
-  layers.Dense(IMAGE_VECTOR_DIMENSIONS, activation='tanh', input_shape=(EMBEDDING_VECTOR_DIMENSION,))
+    layers.Dense(IMAGE_VECTOR_DIMENSIONS, activation='tanh', input_shape=(EMBEDDING_VECTOR_DIMENSION,))
 ])
 
 v1 = projection_model(emb_input_1)
@@ -52,15 +53,18 @@ embeddings_ds = tf.data.Dataset.zip((
 ))
 embeddings_ds = embeddings_ds.cache().shuffle(1000).repeat()
 
+
 @tf.function
 def make_label_for_pair(embeddings, labels):
-  #embedding_1, label_1 = tuple_1
-  #embedding_2, label_2 = tuple_2
-  return (embeddings[0,:], embeddings[1,:]), tf.cast(labels[0] == labels[1], tf.float32)
+    # embedding_1, label_1 = tuple_1
+    # embedding_2, label_2 = tuple_2
+    return (embeddings[0, :], embeddings[1, :]), tf.cast(labels[0] == labels[1], tf.float32)
+
 
 # because of shuffling, we can take two adjacent tuples as a randomly matched pair
 train_ds = embeddings_ds.window(2, drop_remainder=True)
-train_ds = train_ds.flat_map(lambda w1, w2: tf.data.Dataset.zip((w1.batch(2), w2.batch(2)))) # see https://stackoverflow.com/questions/55429307/how-to-use-windows-created-by-the-dataset-window-method-in-tensorflow-2-0
+train_ds = train_ds.flat_map(lambda w1, w2: tf.data.Dataset.zip((w1.batch(2), w2.batch(
+    2))))  # see https://stackoverflow.com/questions/55429307/how-to-use-windows-created-by-the-dataset-window-method-in-tensorflow-2-0
 # generate the target label depending on whether the labels match or not
 train_ds = train_ds.map(make_label_for_pair, num_parallel_calls=tf.data.AUTOTUNE, deterministic=False)
 # resample to the desired distribution
@@ -80,4 +84,5 @@ embedding = alexnet(im_input)
 image_vector = projection_model(embedding)
 inference_model = Model(inputs=im_input, outputs=image_vector)
 
-inference_model.save(get_modeldir('seamese_cifar10_' + str(IMAGE_VECTOR_DIMENSIONS) + '.tf'), save_format='tf', include_optimizer=False)
+inference_model.save(get_modeldir('seamese_cifar10_' + str(IMAGE_VECTOR_DIMENSIONS) + '.tf'), save_format='tf',
+                     include_optimizer=False)

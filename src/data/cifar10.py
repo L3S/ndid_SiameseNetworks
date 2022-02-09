@@ -6,6 +6,7 @@ from tensorflow.keras import datasets
 from tensorflow import data
 import tensorflow as tf
 
+
 def cifar10_complete():
     (train_images, train_labels), (test_images, test_labels) = datasets.cifar10.load_data()
     images = np.concatenate([train_images, test_images])
@@ -27,11 +28,12 @@ def shuffle_arrays(arrays, set_seed=-1):
     set_seed : Seed value if int >= 0, else seed is random.
     """
     assert all(len(arr) == len(arrays[0]) for arr in arrays)
-    seed = np.random.randint(0, 2**(32 - 1) - 1) if set_seed < 0 else set_seed
+    seed = np.random.randint(0, 2 ** (32 - 1) - 1) if set_seed < 0 else set_seed
 
     for arr in arrays:
         rstate = np.random.RandomState(seed)
         rstate.shuffle(arr)
+
 
 def produce_tuples():
     (train_images, train_labels), (test_images, test_labels) = datasets.cifar10.load_data()
@@ -129,7 +131,8 @@ def load_tuples():
 
 
 def prepare_dataset():
-    (anchor_images, anchor_labels), (positive_images, positive_labels), (negative_images, negative_labels) = produce_tuples()
+    (anchor_images, anchor_labels), (positive_images, positive_labels), (
+    negative_images, negative_labels) = produce_tuples()
 
     anchor_ds = data.Dataset.from_tensor_slices(anchor_images)
     positive_ds = data.Dataset.from_tensor_slices(positive_images)

@@ -4,10 +4,12 @@ from tensorflow.keras import layers, callbacks, datasets, Sequential
 
 tensorboard_cb = callbacks.TensorBoard(get_logdir("alexnet/fit"))
 
+
 class AlexNetModel(Sequential):
     def __init__(self):
         super(AlexNetModel, self).__init__([
-            layers.Conv2D(filters=96, kernel_size=(11, 11), strides=(4, 4), activation='relu', input_shape=target_shape + (3,)),
+            layers.Conv2D(filters=96, kernel_size=(11, 11), strides=(4, 4), activation='relu',
+                          input_shape=target_shape + (3,)),
             layers.BatchNormalization(),
             layers.MaxPool2D(pool_size=(3, 3), strides=(2, 2)),
 
@@ -41,9 +43,11 @@ class AlexNetModel(Sequential):
                 loss='sparse_categorical_crossentropy',
                 metrics=['accuracy'],
                 loss_weights=None, weighted_metrics=None, run_eagerly=None, steps_per_execution=None, **kwargs):
-        super().compile(optimizer, loss, metrics, loss_weights, weighted_metrics, run_eagerly, steps_per_execution, **kwargs)
+        super().compile(optimizer, loss, metrics, loss_weights, weighted_metrics, run_eagerly, steps_per_execution,
+                        **kwargs)
 
-    def fit(self, x=None, y=None, batch_size=None, epochs=50, verbose='auto', callbacks=[tensorboard_cb], validation_split=0.,
+    def fit(self, x=None, y=None, batch_size=None, epochs=50, verbose='auto', callbacks=[tensorboard_cb],
+            validation_split=0.,
             validation_data=None, shuffle=True, class_weight=None, sample_weight=None, initial_epoch=0,
             steps_per_epoch=None, validation_steps=None, validation_batch_size=None, validation_freq=1,
             max_queue_size=10, workers=1, use_multiprocessing=False):
@@ -73,7 +77,11 @@ class AlexNetModel(Sequential):
         # plot_grid25(test_ds)
         # plot_grid25(validation_ds)
 
-        train_ds = (train_ds.map(process_images_couple).shuffle(buffer_size=train_ds_size).batch(batch_size=32, drop_remainder=True))
-        test_ds = (test_ds.map(process_images_couple).shuffle(buffer_size=train_ds_size).batch(batch_size=32, drop_remainder=True))
-        validation_ds = (validation_ds.map(process_images_couple).shuffle(buffer_size=train_ds_size).batch(batch_size=32, drop_remainder=True))
+        train_ds = (train_ds.map(process_images_couple).shuffle(buffer_size=train_ds_size).batch(batch_size=32,
+                                                                                                 drop_remainder=True))
+        test_ds = (test_ds.map(process_images_couple).shuffle(buffer_size=train_ds_size).batch(batch_size=32,
+                                                                                               drop_remainder=True))
+        validation_ds = (
+            validation_ds.map(process_images_couple).shuffle(buffer_size=train_ds_size).batch(batch_size=32,
+                                                                                              drop_remainder=True))
         return train_ds, test_ds, validation_ds

@@ -1,4 +1,5 @@
 import sys
+
 sys.path.append("..")
 
 import csv
@@ -9,6 +10,7 @@ from src.data.cifar10 import *
 from tensorflow.keras import models
 
 cifar10_vds = cifar10_complete_resized()
+
 
 def export_hsv(bin0=256, bin1=256, bin2=256):
     header = ['ID', 'Label', 'HSV vector']
@@ -60,6 +62,7 @@ def export_embeddings():
             label_str = ','.join(map(str, label))
             value_str = ','.join(map(str, embeddings[i]))
             writer.writerow([i, label_str, value_str])
+
 
 # HSV
 # export_hsv(170, 171, 171) # 512

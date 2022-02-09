@@ -1,4 +1,5 @@
 import sys
+
 sys.path.append("..")
 
 from src.data.embeddings import *
@@ -19,17 +20,17 @@ MODEL_URL = "https://tfhub.dev/sayakpaul/vit_s16_fe/1"
 MODEL_INPUT_SIZE = [None, 224, 224, 3]
 
 embedding_model = tf.keras.models.Sequential([
-  hub.KerasLayer(MODEL_URL, trainable=False)
+    hub.KerasLayer(MODEL_URL, trainable=False)
 ])
 
 embedding_model.build(MODEL_INPUT_SIZE)
 embedding_model.summary()
 
-#DATASET_NAME = 'cats_vs_dogs'
+# DATASET_NAME = 'cats_vs_dogs'
 DATASET_NAME = 'cifar10'
-#DATASET_NAME = 'cars196'
+# DATASET_NAME = 'cars196'
 
-#NOTE: For cars196 & other datasets with many classes, the rejection resampling
+# NOTE: For cars196 & other datasets with many classes, the rejection resampling
 #      used to balance the positive and negative classes does NOT work anymore! (the input pipeline chokes)
 #      Need to find a better solution!
 # -> FIX: Using class weights based on the number of labels in the original dataset seems to work perfectly well (and training speed improves greatly too)
@@ -37,19 +38,22 @@ DATASET_NAME = 'cifar10'
 # Load dataset in a form already consumable by Tensorflow
 ds = tfds.load(DATASET_NAME, split='train')
 
+
 # Resize images to the model's input size and normalize to [0.0, 1.0] as per the
 # expected image input signature: https://www.tensorflow.org/hub/common_signatures/images#input
 def resize_and_normalize(features):
-  return {
-      #'id': features['id'],
-      'label': features['label'],
-      'image': (tf.image.resize( tf.image.convert_image_dtype(features['image'], tf.float32), MODEL_INPUT_SIZE[1:3]) - 0.5)*2 # ViT requires images in range [-1,1]
-  }
+    return {
+        # 'id': features['id'],
+        'label': features['label'],
+        'image': (tf.image.resize(tf.image.convert_image_dtype(features['image'], tf.float32),
+                                  MODEL_INPUT_SIZE[1:3]) - 0.5) * 2  # ViT requires images in range [-1,1]
+    }
+
 
 ds = ds.map(resize_and_normalize, num_parallel_calls=tf.data.AUTOTUNE, deterministic=False)
 
 # Add batch and prefetch to dataset to speed up processing
-BATCH_SIZE=256
+BATCH_SIZE = 256
 batched_ds = ds.batch(BATCH_SIZE).prefetch(tf.data.AUTOTUNE)
 
 # Dataset has keys "id" (that we ignore), "image" and "label".
@@ -60,24 +64,24 @@ batched_ds = ds.batch(BATCH_SIZE).prefetch(tf.data.AUTOTUNE)
 DST_FNAME = get_datadir('vit_s16_fe.embeddings.pkl')
 
 if Path(DST_FNAME).exists():
-  # When you need to use the embeddings, upload the file (or store it on Drive and mount your drive folder in Colab), then run:
-  df = pd.read_pickle(DST_FNAME) # adapt the path as needed
-  embeddings = np.array(df.embedding.values.tolist())
-  labels = df.label.values
+    # When you need to use the embeddings, upload the file (or store it on Drive and mount your drive folder in Colab), then run:
+    df = pd.read_pickle(DST_FNAME)  # adapt the path as needed
+    embeddings = np.array(df.embedding.values.tolist())
+    labels = df.label.values
 else:
-  embeddings = []
-  labels = []
-  for features_batch in tqdm(batched_ds):
-    embeddings.append(embedding_model(features_batch['image']).numpy())
-    labels.append(features_batch['label'].numpy())
+    embeddings = []
+    labels = []
+    for features_batch in tqdm(batched_ds):
+        embeddings.append(embedding_model(features_batch['image']).numpy())
+        labels.append(features_batch['label'].numpy())
 
-  embeddings = np.concatenate(embeddings)
-  labels = np.concatenate(labels)
+    embeddings = np.concatenate(embeddings)
+    labels = np.concatenate(labels)
 
-  # Store the precompued values to disk
-  df = pd.DataFrame({'embedding':embeddings.tolist(),'label':labels})
-  df.to_pickle(DST_FNAME)
-  # Download the generated file to store the calculated embeddings.
+    # Store the precompued values to disk
+    df = pd.DataFrame({'embedding': embeddings.tolist(), 'label': labels})
+    df.to_pickle(DST_FNAME)
+    # Download the generated file to store the calculated embeddings.
 
 NUM_CLASSES = np.unique(labels).shape[0]
 
@@ -87,28 +91,33 @@ embeddings_ds = tf.data.Dataset.zip((
     tf.data.Dataset.from_tensor_slices(labels)
 )).cache().shuffle(1000).repeat()
 
+
 @tf.function
 def make_label_for_pair(embeddings, labels):
-  #embedding_1, label_1 = tuple_1
-  #embedding_2, label_2 = tuple_2
-  return (embeddings[0,:], embeddings[1,:]), tf.cast(labels[0] == labels[1], tf.float32)
+    # embedding_1, label_1 = tuple_1
+    # embedding_2, label_2 = tuple_2
+    return (embeddings[0, :], embeddings[1, :]), tf.cast(labels[0] == labels[1], tf.float32)
+
 
 # because of shuffling, we can take two adjacent tuples as a randomly matched pair
 train_ds = embeddings_ds.window(2, drop_remainder=True)
-train_ds = train_ds.flat_map(lambda w1, w2: tf.data.Dataset.zip((w1.batch(2), w2.batch(2)))) # see https://stackoverflow.com/questions/55429307/how-to-use-windows-created-by-the-dataset-window-method-in-tensorflow-2-0
+train_ds = train_ds.flat_map(lambda w1, w2: tf.data.Dataset.zip((w1.batch(2), w2.batch(
+    2))))  # see https://stackoverflow.com/questions/55429307/how-to-use-windows-created-by-the-dataset-window-method-in-tensorflow-2-0
 # generate the target label depending on whether the labels match or not
 train_ds = train_ds.map(make_label_for_pair, num_parallel_calls=tf.data.AUTOTUNE, deterministic=False)
 # resample to the desired distribution
-#train_ds = train_ds.rejection_resample(lambda embs, target: tf.cast(target, tf.int32), [0.5, 0.5], initial_dist=[0.9, 0.1])
-#train_ds = train_ds.map(lambda _, vals: vals) # discard the prepended "selected" class from the rejction resample, since we aleady have it available
+# train_ds = train_ds.rejection_resample(lambda embs, target: tf.cast(target, tf.int32), [0.5, 0.5], initial_dist=[0.9, 0.1])
+# train_ds = train_ds.map(lambda _, vals: vals) # discard the prepended "selected" class from the rejction resample, since we aleady have it available
 
 ## Model hyperparters
 EMBEDDING_VECTOR_DIMENSION = 384
 IMAGE_VECTOR_DIMENSIONS = 128
-ACTIVATION_FN = 'tanh' # same as in paper
+ACTIVATION_FN = 'tanh'  # same as in paper
 MARGIN = 0.005
 
-DST_MODEL_FNAME = get_modeldir('seamese_cifar10_' + str(Path(Path(DST_FNAME).stem).stem) + '_' + str(IMAGE_VECTOR_DIMENSIONS) + '.tf')
+DST_MODEL_FNAME = get_modeldir(
+    'seamese_cifar10_' + str(Path(Path(DST_FNAME).stem).stem) + '_' + str(IMAGE_VECTOR_DIMENSIONS) + '.tf')
+
 
 ## These functions are straight from the Keras tutorial linked above
 
@@ -179,6 +188,7 @@ def loss(margin=1):
 
     return contrastive_loss
 
+
 from tensorflow.keras import layers, Model
 
 emb_input_1 = layers.Input(EMBEDDING_VECTOR_DIMENSION)
@@ -186,7 +196,7 @@ emb_input_2 = layers.Input(EMBEDDING_VECTOR_DIMENSION)
 
 # projection model is the one to use for queries (put in a sequence after the embedding-generator model above)
 projection_model = tf.keras.models.Sequential([
-  layers.Dense(IMAGE_VECTOR_DIMENSIONS, activation=ACTIVATION_FN, input_shape=(EMBEDDING_VECTOR_DIMENSION,))
+    layers.Dense(IMAGE_VECTOR_DIMENSIONS, activation=ACTIVATION_FN, input_shape=(EMBEDDING_VECTOR_DIMENSION,))
 ])
 
 v1 = projection_model(emb_input_1)
@@ -207,18 +217,18 @@ siamese.compile(loss=loss(margin=MARGIN), optimizer="RMSprop")
 siamese.summary()
 
 callbacks = [
-  tf.keras.callbacks.TensorBoard(log_dir='logs', profile_batch=5)
+    tf.keras.callbacks.TensorBoard(log_dir='logs', profile_batch=5)
 ]
 
 # TODO: Would be good to have a validation dataset too.
 
-ds = train_ds.batch(TRAIN_BATCH_SIZE)#.prefetch(tf.data.AUTOTUNE)
+ds = train_ds.batch(TRAIN_BATCH_SIZE)  # .prefetch(tf.data.AUTOTUNE)
 history = siamese.fit(
     ds,
     epochs=NUM_EPOCHS,
     steps_per_epoch=STEPS_PER_EPOCH,
     callbacks=callbacks,
-    class_weight={0:1/NUM_CLASSES, 1:(NUM_CLASSES-1)/NUM_CLASSES}
+    class_weight={0: 1 / NUM_CLASSES, 1: (NUM_CLASSES - 1) / NUM_CLASSES}
 )
 
 # Build full inference model (from image to image vector):
@@ -256,10 +266,11 @@ def write_embeddings_for_tensorboard(image_vectors: list, labels: list, root_dir
     embedding.tensor_path = 'values.tsv'
     projector.visualize_embeddings(root_dir, config)
 
+
 inference_model = tf.keras.models.load_model(DST_MODEL_FNAME, compile=False)
 
 NUM_SAMPLES_TO_DISPLAY = 10000
-LOG_DIR=Path('logs_vit')
+LOG_DIR = Path('../logs_vit')
 LOG_DIR.mkdir(exist_ok=True, parents=True)
 
 val_ds = (tfds.load(DATASET_NAME, split='test')
@@ -273,11 +284,11 @@ val_ds = (tfds.load(DATASET_NAME, split='test')
 image_vectors = []
 labels = []
 for feats_batch in tqdm(val_ds):
-  ims = feats_batch['image']
-  lbls = feats_batch['label'].numpy()
-  embs = inference_model(ims).numpy()
-  image_vectors.extend(embs.tolist())
-  labels.extend(lbls.tolist())
+    ims = feats_batch['image']
+    lbls = feats_batch['label'].numpy()
+    embs = inference_model(ims).numpy()
+    image_vectors.extend(embs.tolist())
+    labels.extend(lbls.tolist())
 
 write_embeddings_for_tensorboard(image_vectors, labels, LOG_DIR)
 
@@ -286,12 +297,12 @@ ds = embeddings_ds.take(NUM_SAMPLES_TO_DISPLAY).batch(BATCH_SIZE).prefetch(tf.da
 _image_vectors = []
 _labels = []
 for feats_batch in tqdm(ds):
-  ims, lbls = feats_batch
-  ims = ims.numpy()
-  lbls = lbls.numpy()
-  embs = projection_model(ims).numpy()
-  _image_vectors.extend(embs.tolist())
-  _labels.extend(lbls.tolist())
-write_embeddings_for_tensorboard(_image_vectors, _labels, LOG_DIR/'train')
+    ims, lbls = feats_batch
+    ims = ims.numpy()
+    lbls = lbls.numpy()
+    embs = projection_model(ims).numpy()
+    _image_vectors.extend(embs.tolist())
+    _labels.extend(lbls.tolist())
+write_embeddings_for_tensorboard(_image_vectors, _labels, LOG_DIR / 'train')
 
 print('done')

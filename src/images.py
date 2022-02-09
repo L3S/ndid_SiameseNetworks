@@ -1,13 +1,14 @@
 import sys
+
 sys.path.append("..")
 
 from src.utils.sift import *
 from src.data.cifar10 import *
 import tensorflow as tf
 
-
 # Load dataset
 cifar10_vds = cifar10_complete()
+
 
 def print_resized(dataset):
     plt.figure(figsize=(20, 20))
@@ -23,6 +24,7 @@ def print_resized(dataset):
         subplot_image(3, 3, i * 3 + 2, img_cv2, "CV2 image")
         subplot_image(3, 3, i * 3 + 3, img_tf.numpy(), "TF image")
     plt.show()
+
 
 print_resized(cifar10_vds)
 

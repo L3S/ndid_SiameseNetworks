@@ -22,7 +22,7 @@ def process_images(image):
     return image
 
 
-def subplot_image(nrows, ncols, index, image, title = None):
+def subplot_image(nrows, ncols, index, image, title=None):
     ax = plt.subplot(nrows, ncols, index)
     ax.imshow(image)
     if title is not None:
