@@ -2,13 +2,11 @@ import numpy as np
 import _pickle as pickle
 import matplotlib.pyplot as plt
 from src.utils.common import get_datadir, process_images, process_images_couple
-from tensorflow.keras import datasets
-from tensorflow import data
 import tensorflow as tf
 
 
 def cifar10_complete():
-    (train_images, train_labels), (test_images, test_labels) = datasets.cifar10.load_data()
+    (train_images, train_labels), (test_images, test_labels) = tf.keras.datasets.cifar10.load_data()
     images = np.concatenate([train_images, test_images])
     labels = np.concatenate([train_labels, test_labels])
     return tf.data.Dataset.from_tensor_slices((images, labels))
@@ -36,7 +34,7 @@ def shuffle_arrays(arrays, set_seed=-1):
 
 
 def produce_tuples():
-    (train_images, train_labels), (test_images, test_labels) = datasets.cifar10.load_data()
+    (train_images, train_labels), (test_images, test_labels) = tf.keras.datasets.cifar10.load_data()
 
     total_labels = 10
     images_per_label = 6000
@@ -131,18 +129,17 @@ def load_tuples():
 
 
 def prepare_dataset():
-    (anchor_images, anchor_labels), (positive_images, positive_labels), (
-    negative_images, negative_labels) = produce_tuples()
+    (anchor_images, anchor_labels), (positive_images, positive_labels), (negative_images, negative_labels) = produce_tuples()
 
-    anchor_ds = data.Dataset.from_tensor_slices(anchor_images)
-    positive_ds = data.Dataset.from_tensor_slices(positive_images)
-    negative_ds = data.Dataset.from_tensor_slices(negative_images)
+    anchor_ds = tf.data.Dataset.from_tensor_slices(anchor_images)
+    positive_ds = tf.data.Dataset.from_tensor_slices(positive_images)
+    negative_ds = tf.data.Dataset.from_tensor_slices(negative_images)
 
     anchor_ds = (anchor_ds.map(process_images).batch(batch_size=32, drop_remainder=True))
     positive_ds = (positive_ds.map(process_images).batch(batch_size=32, drop_remainder=True))
     negative_ds = (negative_ds.map(process_images).batch(batch_size=32, drop_remainder=True))
 
-    dataset = data.Dataset.zip((anchor_ds, positive_ds, negative_ds))
+    dataset = tf.data.Dataset.zip((anchor_ds, positive_ds, negative_ds))
     # dataset = dataset.shuffle(buffer_size=1024)
     return dataset
 

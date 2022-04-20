@@ -37,7 +37,7 @@ def write_embeddings_for_tensorboard(image_vectors: list, labels: list, root_dir
     projector.visualize_embeddings(root_dir, config)
 
 
-inference_model = tf.keras.models.load_model(get_modeldir('seamese_cifar10_512.tf'), compile=False)
+inference_model = tf.keras.models.load_model(get_modeldir('cifar10_alexnet.tf'), compile=False)
 
 NUM_SAMPLES_TO_DISPLAY = 10000
 LOG_DIR = Path('../logs')
@@ -78,7 +78,7 @@ projection_model = tf.keras.models.Sequential([
 v1 = projection_model(emb_input_1)
 v2 = projection_model(emb_input_2)
 
-embeddings, embedding_labels = load_embeddings()
+embeddings, embedding_labels = load_embeddings('cifar10_alexnet_embeddings')
 embeddings_ds = tf.data.Dataset.zip((
     tf.data.Dataset.from_tensor_slices(embeddings),
     tf.data.Dataset.from_tensor_slices(embedding_labels)
@@ -96,4 +96,6 @@ for feats_batch in tqdm(ds):
     embs = projection_model(ims).numpy()
     _image_vectors.extend(embs.tolist())
     _labels.extend(lbls.tolist())
-write_embeddings_for_tensorboard(_image_vectors, _labels, LOG_DIR / 'train')
+write_embeddings_for_tensorboard(embeddings, embedding_labels, LOG_DIR / 'train')
+
+print('done')

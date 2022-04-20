@@ -1,6 +1,6 @@
 import numpy as np
 import _pickle as pickle
-from keras import Model
+from tensorflow.keras import Model
 from src.data.cifar10 import cifar10_complete_resized
 from src.utils.common import get_datadir
 
@@ -17,15 +17,15 @@ def calc_embeddings(alexnet):
     return embeddings, embedding_labels
 
 
-def save_embeddings(embeddings, labels):
+def save_embeddings(embeddings, labels, title='embeddings_labels'):
     data = [embeddings, labels]
 
-    with open(get_datadir('embeddings_labels.pkl'), 'wb') as outfile:
+    with open(get_datadir(title + '.pkl'), 'wb') as outfile:
         pickle.dump(data, outfile, -1)
 
 
-def load_embeddings():
-    with open(get_datadir('embeddings_labels.pkl'), 'rb') as infile:
+def load_embeddings(title='embeddings_labels'):
+    with open(get_datadir(title + '.pkl'), 'rb') as infile:
         result = pickle.load(infile)
 
     return result[0], result[1]

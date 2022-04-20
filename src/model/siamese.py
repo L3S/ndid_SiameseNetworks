@@ -1,75 +1,47 @@
 from src.utils.common import *
-from tensorflow.keras import metrics, Model
-
-"""
-## Putting everything together
-
-We now need to implement a model with custom training loop so we can compute
-the triplet loss using the three embeddings produced by the Siamese network.
-
-Let's create a `Mean` metric instance to track the loss of the training process.
-"""
+from src.utils.distance import *
+from tensorflow.keras import layers, Model
 
 
 class SiameseModel(Model):
-    """The Siamese Network model with a custom training and testing loops."""
+    """ Filippo's Siamese model
+    """
 
-    def __init__(self, siamese_network, margin=0.5):
-        super(SiameseModel, self).__init__()
-        self.siamese_network = siamese_network
-        self.margin = margin
-        self.loss_tracker = metrics.Mean(name="loss")
+    def __init__(self, siamese_network, embedding_vector_dimension=4096, image_vector_dimensions=512):
+        super().__init__()
 
-    def call(self, inputs):
-        return self.siamese_network(inputs)
+        emb_input_1 = layers.Input(embedding_vector_dimension)
+        emb_input_2 = layers.Input(embedding_vector_dimension)
 
-    def train_step(self, data):
-        # GradientTape is a context manager that records every operation that
-        # you do inside. We are using it here to compute the loss so we can get
-        # the gradients and apply them using the optimizer specified in
-        # `compile()`.
-        with tf.GradientTape() as tape:
-            loss = self._compute_loss(data)
+        # projection model is the one to use for queries (put in a sequence after the embedding-generator model above)
+        projection_model = tf.keras.models.Sequential([
+            layers.Dense(image_vector_dimensions, activation='tanh', input_shape=(embedding_vector_dimension,))
+        ])
 
-        # Storing the gradients of the loss function with respect to the
-        # weights/parameters.
-        gradients = tape.gradient(loss, self.siamese_network.trainable_weights)
+        v1 = projection_model(emb_input_1)
+        v2 = projection_model(emb_input_2)
+        computed_distance = layers.Lambda(cosine_distance)([v1, v2])
 
-        # Applying the gradients on the model using the specified optimizer
-        self.optimizer.apply_gradients(
-            zip(gradients, self.siamese_network.trainable_weights)
-        )
+        # siamese is the model we train
+        self.siamese = Model(inputs=[emb_input_1, emb_input_2], outputs=computed_distance)
+        # TODO: If there's a need to adapt the learning rate, explicitly create the optimizer instance here and pass it into compile
+        self.siamese.compile(loss=loss(margin=0.05), optimizer="RMSprop")
+        self.siamese.summary()
 
-        # Let's update and return the training loss metric.
-        self.loss_tracker.update_state(loss)
-        return {"loss": self.loss_tracker.result()}
+        # Build full inference model (from image to image vector):
+        im_input = siamese_network.input
+        embedding = siamese_network(im_input)
+        image_vector = projection_model(embedding)
+        self.inference_model = Model(inputs=im_input, outputs=image_vector)
 
-    def test_step(self, data):
-        loss = self._compute_loss(data)
+    def fit(self, ds, epochs=3, steps_per_epoch=1000, **kwargs):
+        return self.siamese.fit(ds, epochs=epochs, steps_per_epoch=steps_per_epoch, **kwargs)
 
-        # Let's update and return the loss metric.
-        self.loss_tracker.update_state(loss)
-        return {"loss": self.loss_tracker.result()}
+    def save(self, filepath, overwrite=True, include_optimizer=False, save_format=None,
+             signatures=None, options=None, save_traces=True):
+        return self.inference_model.save(filepath, overwrite=overwrite, include_optimizer=include_optimizer,
+                                         save_format=save_format, signatures=signatures, options=options,
+                                         save_traces=save_traces)
 
-    def _compute_loss(self, data):
-        """Computes the triplet loss using the three embeddings produced by the Siamese Network.
-
-        The triplet loss is defined as:
-            L(A, P, N) = max(‖f(A) - f(P)‖² - ‖f(A) - f(N)‖² + margin, 0)
-        """
-
-        # The output of the network is a tuple containing the distances
-        # between the anchor and the positive example, and the anchor and
-        # the negative example.
-        ap_distance, an_distance = self.siamese_network(data)
-
-        # Computing the Triplet Loss by subtracting both distances and
-        # making sure we don't get a negative value.
-        loss = ap_distance - an_distance
-        loss = tf.maximum(loss + self.margin, 0.0)
-        return loss
-
-    @property
-    def metrics(self):
-        # We need to list our metrics here so the `reset_states()` can be called automatically.
-        return [self.loss_tracker]
+    def call(self, inputs, training=None, mask=None):
+        return self.inference_model(inputs)

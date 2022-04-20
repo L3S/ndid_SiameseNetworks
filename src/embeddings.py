@@ -1,13 +1,10 @@
 import sys
-
 sys.path.append("..")
 
 import csv
 from src.utils.hsv import *
 from src.utils.sift import *
-from utils.common import *
-from src.data.cifar10 import *
-from tensorflow.keras import models
+from src.data.embeddings import *
 
 cifar10_vds = cifar10_complete_resized()
 
@@ -45,19 +42,13 @@ def export_sift(nfeatures=8):
 
 
 def export_embeddings():
-    header = ['ID', 'Label', 'Siamese Embeddings']
-    with open('../data/siamese.csv', 'w', encoding='UTF8', newline='') as f:
+    header = ['ID', 'Label', 'Alexnet Embeddings']
+    with open('../data/alexnet.csv', 'w', encoding='UTF8', newline='') as f:
         writer = csv.writer(f, delimiter=";")
         # write the header
         writer.writerow(header)
 
-        seamese = models.load_model(get_modeldir('seamese_cifar10_512.tf'))
-        embedding_vds = (cifar10_vds.batch(batch_size=32, drop_remainder=False))
-        print('predicting embeddings')
-        embeddings = seamese.predict(embedding_vds)
-        embeddings_labels = np.concatenate([y for x, y in embedding_vds], axis=0)
-        print('embeddings done')
-
+        embeddings, embeddings_labels = load_embeddings(title='cifar10_alexnet_embeddings')
         for i, (label) in enumerate(embeddings_labels):
             label_str = ','.join(map(str, label))
             value_str = ','.join(map(str, embeddings[i]))
