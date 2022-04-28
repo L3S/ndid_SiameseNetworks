@@ -10,7 +10,7 @@ CIFAR10_CLASS_NAMES = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', '
 
 
 def process_images_couple(image, label):
-    return process_images(image), label
+    return resize_image(normalize_image(image), target_shape), label
 
 
 def process_images(image):
@@ -20,6 +20,17 @@ def process_images(image):
     image = tf.image.resize(image, target_shape, method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
     image = tf.cast(image, tf.uint8)
     return image
+
+
+def normalize_image(image):
+    image1 = tf.cast(image, tf.uint8)
+    image2 = tf.image.per_image_standardization(image)
+    # image9 = (image / (255 / 2)) - 1
+    return image2
+
+
+def resize_image(image, target_size):
+    return tf.image.resize(image, target_size, method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
 
 
 def subplot_image(nrows, ncols, index, image, title=None):

@@ -5,11 +5,10 @@ import numpy as np
 from src.data.imagenette import *
 from src.data.embeddings import *
 from utils.common import *
-from src.model.alexnet import AlexNetModel
 from tensorflow.keras import layers, Model
 from pathlib import Path
 
-model_name = 'imagenette_alexnet'
+model_name = 'imagenette_vgg16'
 embeddings_name = model_name + '_embeddings'
 
 train_ds, test_ds = load_dataset()
@@ -26,32 +25,44 @@ print("Validation data size:", tf.data.experimental.cardinality(val_ds).numpy())
 print("Evaluation data size:", tf.data.experimental.cardinality(test_ds).numpy())
 
 # load model
-# alexnet = models.load_model(get_modeldir(model_name + '.tf'))
+# model = models.load_model(get_modeldir(model_name + '.tf'))
 
 # create model
-alexnet = AlexNetModel()
-alexnet.compile()
-alexnet.summary()
+model = tf.keras.applications.VGG16(
+    include_top=True,
+    input_shape=(227, 227, 3),
+    weights=None,
+    classes=10
+)
+
+PRETRAIN_EPOCHS = 20
+PRETRAIN_TOTAL_STEPS = PRETRAIN_EPOCHS * len(fit_ds)
+
+loss = tf.keras.losses.SparseCategoricalCrossentropy()
+optimizer = tf.keras.optimizers.RMSprop(tf.keras.optimizers.schedules.CosineDecay(1e-3, PRETRAIN_TOTAL_STEPS))
+
+model.compile(loss=loss, optimizer=optimizer, metrics=['accuracy'])
+model.summary()
 
 # load weights
-alexnet.load_weights(get_modeldir(model_name + '.h5'))
+model.load_weights(get_modeldir(model_name + '.h5'))
 
 # train
-# alexnet.fit(fit_ds, validation_data=val_ds)
+# model.fit(fit_ds, epochs=PRETRAIN_EPOCHS, validation_data=val_ds)
 
 # save
-# alexnet.save_weights(get_modeldir(model_name + '.h5'))
-# alexnet.save(get_modeldir(model_name + '.tf'))
+# model.save_weights(get_modeldir(model_name + '.h5'))
+# model.save(get_modeldir(model_name + '.tf'))
 
 # evaluate
 print('evaluating...')
-alexnet.evaluate(test_ds)
+model.evaluate(test_ds)
 
-for layer in alexnet.layers:
+for layer in model.layers:
     layer.trainable = False
 
 # save embeddings
-embedding_model = tf.keras.Model(inputs=alexnet.input, outputs=alexnet.layers[-2].output)
+embedding_model = tf.keras.Model(inputs=model.input, outputs=model.layers[-2].output)
 embedding_model.summary()
 
 embedding_vds = train_ds.concatenate(test_ds)
@@ -327,16 +338,3 @@ image_vectors = inference_model.predict(embedding_vds)
 labels = embedding_labels
 
 write_embeddings_for_tensorboard(image_vectors, labels, LOG_DIR)
-
-# # Do the same with some of the training data, just to see if it works with that
-# ds = embeddings_ds.take(NUM_SAMPLES_TO_DISPLAY).batch(BATCH_SIZE).prefetch(tf.data.AUTOTUNE)
-# _image_vectors = []
-# _labels = []
-# for feats_batch in tqdm(ds):
-#     ims, lbls = feats_batch
-#     ims = ims.numpy()
-#     lbls = lbls.numpy()
-#     embs = projection_model(ims).numpy()
-#     _image_vectors.extend(embs.tolist())
-#     _labels.extend(lbls.tolist())
-# write_embeddings_for_tensorboard(_image_vectors, _labels, LOG_DIR / 'train')

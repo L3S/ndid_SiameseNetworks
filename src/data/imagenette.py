@@ -1,6 +1,31 @@
+import tensorflow as tf
+
+
+def normalize(image, label):
+    # image = tf.cast(image, tf.uint8)
+    # image = tf.image.per_image_standardization(image)
+    image = tf.keras.applications.vgg16.preprocess_input(image)
+    # image9 = (image / (255 / 2)) - 1
+    return image, label
+
 
 def load_dataset():
-    (train_images, train_labels), (test_images, test_labels) = tf.keras.datasets.cifar10.load_data()
-    images = np.concatenate([train_images, test_images])
-    labels = np.concatenate([train_labels, test_labels])
-    return tf.data.Dataset.from_tensor_slices((images, labels))
+    train_ds = tf.keras.utils.image_dataset_from_directory(
+        directory='../datasets/imagenette2/train/',
+        labels='inferred',
+        label_mode='int',
+        batch_size=32,
+        image_size=(227, 227),
+        interpolation='nearest'
+    ).map(normalize).prefetch(tf.data.AUTOTUNE)
+
+    val_ds = tf.keras.utils.image_dataset_from_directory(
+        directory='../datasets/imagenette2/val/',
+        labels='inferred',
+        label_mode='int',
+        batch_size=32,
+        image_size=(227, 227),
+        interpolation='nearest'
+    ).map(normalize).prefetch(tf.data.AUTOTUNE)
+
+    return train_ds, val_ds
