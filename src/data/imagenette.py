@@ -15,7 +15,7 @@ def load_dataset():
         labels='inferred',
         label_mode='int',
         batch_size=32,
-        image_size=(227, 227),
+        image_size=(224, 224),
         interpolation='nearest'
     ).map(normalize).prefetch(tf.data.AUTOTUNE)
 
@@ -24,7 +24,8 @@ def load_dataset():
         labels='inferred',
         label_mode='int',
         batch_size=32,
-        image_size=(227, 227),
+        image_size=(224, 224),
+        shuffle=False,
         interpolation='nearest'
     ).map(normalize).prefetch(tf.data.AUTOTUNE)
 

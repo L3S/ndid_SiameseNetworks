@@ -1,7 +1,4 @@
 import sys
-
-import keras
-
 sys.path.append("..")
 
 import numpy as np
@@ -11,46 +8,35 @@ from utils.common import *
 from tensorflow.keras import layers, Model
 from pathlib import Path
 
-model_name = 'imagenet_vgg16'
+model_name = 'imagenette_vgg16_small'
 embeddings_name = model_name + '_embeddings'
 
 train_ds, test_ds = load_dataset()
 
-test_ds_size = tf.data.experimental.cardinality(test_ds).numpy()
-val_ds = test_ds.take(test_ds_size / 2)
-eval_ds = test_ds.skip(test_ds_size / 2)
+train_ds_size = tf.data.experimental.cardinality(train_ds).numpy()
+fit_ds = train_ds.skip(train_ds_size / 10)
+val_ds = train_ds.take(train_ds_size / 10)
 
-fit_ds_size = tf.data.experimental.cardinality(train_ds).numpy()
+fit_ds_size = tf.data.experimental.cardinality(fit_ds).numpy()
 val_ds_size = tf.data.experimental.cardinality(val_ds).numpy()
-eval_ds_size = tf.data.experimental.cardinality(eval_ds).numpy()
-print("Training data size:", tf.data.experimental.cardinality(train_ds).numpy())
+test_ds_size = tf.data.experimental.cardinality(test_ds).numpy()
+print("Training data size:", tf.data.experimental.cardinality(fit_ds).numpy())
 print("Validation data size:", tf.data.experimental.cardinality(val_ds).numpy())
-print("Evaluation data size:", tf.data.experimental.cardinality(eval_ds).numpy())
+print("Evaluation data size:", tf.data.experimental.cardinality(test_ds).numpy())
 
 # load model
 # model = models.load_model(get_modeldir(model_name + '.tf'))
 
 # create model
 model = tf.keras.applications.VGG16(
-    include_top=False,
-    input_shape=(224, 224, 3),
-    weights="imagenet",
-    # pooling="avg",
-    # classes=10
+    include_top=True,
+    input_shape=(32, 32, 3),
+    weights=None,
+    classes=10
 )
-model.summary()
-
-model.trainable = False
-model = keras.Sequential([
-    model,
-    layers.Flatten(),
-    layers.Dense(4096, activation='relu'),
-    layers.Dense(4096, activation='relu'),
-    layers.Dense(10, activation='softmax')
-])
 
 PRETRAIN_EPOCHS = 20
-PRETRAIN_TOTAL_STEPS = PRETRAIN_EPOCHS * len(train_ds)
+PRETRAIN_TOTAL_STEPS = PRETRAIN_EPOCHS * len(fit_ds)
 
 loss = tf.keras.losses.SparseCategoricalCrossentropy()
 optimizer = tf.keras.optimizers.RMSprop(tf.keras.optimizers.schedules.CosineDecay(1e-3, PRETRAIN_TOTAL_STEPS))
@@ -62,7 +48,7 @@ model.summary()
 # model.load_weights(get_modeldir(model_name + '.h5'))
 
 # train
-model.fit(train_ds, epochs=PRETRAIN_EPOCHS, validation_data=val_ds)
+model.fit(fit_ds, epochs=PRETRAIN_EPOCHS, validation_data=val_ds)
 
 # save
 model.save_weights(get_modeldir(model_name + '.h5'))
@@ -70,13 +56,12 @@ model.save(get_modeldir(model_name + '.tf'))
 
 # evaluate
 print('evaluating...')
-model.evaluate(eval_ds)
+model.evaluate(test_ds)
 
 for layer in model.layers:
     layer.trainable = False
 
 # save embeddings
-print('saving embeddings...')
 embedding_model = tf.keras.Model(inputs=model.input, outputs=model.layers[-2].output)
 embedding_model.summary()
 
@@ -86,7 +71,7 @@ embedding_vds = train_ds.concatenate(test_ds)
 embeddings = embedding_model.predict(embedding_vds)
 embedding_labels = np.concatenate([y for x, y in embedding_vds], axis=0)
 
-save_embeddings(embeddings, embedding_labels, embeddings_name)
+# save_embeddings(embeddings, embedding_labels, embeddings_name)
 # embeddings, embedding_labels = load_embeddings(embeddings_name)
 NUM_CLASSES = np.unique(embedding_labels).shape[0]
 
@@ -344,7 +329,7 @@ def write_embeddings_for_tensorboard(image_vectors: list, labels: list, root_dir
 
 # NUM_SAMPLES_TO_DISPLAY = 10000
 NUM_SAMPLES_TO_DISPLAY = 3000
-LOG_DIR = Path('../logs/logs_projection0428_' + model_name)
+LOG_DIR = Path('../logs/logs_projection0428_vgg16_imagenette_small')
 
 LOG_DIR.mkdir(exist_ok=True, parents=True)
 

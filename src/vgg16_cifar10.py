@@ -45,14 +45,14 @@ model.compile(loss=loss, optimizer=optimizer, metrics=['accuracy'])
 model.summary()
 
 # load weights
-# model.load_weights(get_modeldir(model_name + '.h5'))
+model.load_weights(get_modeldir(model_name + '.h5'))
 
 # train
-model.fit(fit_ds, epochs=PRETRAIN_EPOCHS, validation_data=val_ds)
+# model.fit(fit_ds, epochs=PRETRAIN_EPOCHS, validation_data=val_ds)
 
 # save
-model.save_weights(get_modeldir(model_name + '.h5'))
-model.save(get_modeldir(model_name + '.tf'))
+# model.save_weights(get_modeldir(model_name + '.h5'))
+# model.save(get_modeldir(model_name + '.tf'))
 
 # evaluate
 print('evaluating...')
@@ -68,11 +68,11 @@ embedding_model.summary()
 embedding_vds = train_ds.concatenate(test_ds)
 
 print('calculating embeddings...')
-embeddings = embedding_model.predict(embedding_vds)
-embedding_labels = np.concatenate([y for x, y in embedding_vds], axis=0)
+# embeddings = embedding_model.predict(embedding_vds)
+# embedding_labels = np.concatenate([y for x, y in embedding_vds], axis=0)
 
-save_embeddings(embeddings, embedding_labels, embeddings_name)
-# embeddings, embedding_labels = load_embeddings(embeddings_name)
+# save_embeddings(embeddings, embedding_labels, embeddings_name)
+embeddings, embedding_labels = load_embeddings(embeddings_name)
 NUM_CLASSES = np.unique(embedding_labels).shape[0]
 
 """# Siamese network training
@@ -143,7 +143,7 @@ For different-class couples, the distance should be pushed to a high value. The 
 ## Model hyperparters
 EMBEDDING_VECTOR_DIMENSION = 4096
 # EMBEDDING_VECTOR_DIMENSION = int(1280/2)
-IMAGE_VECTOR_DIMENSIONS = 128
+IMAGE_VECTOR_DIMENSIONS = 3
 # IMAGE_VECTOR_DIMENSIONS = 3 # use for test visualization on tensorboard
 ACTIVATION_FN = 'tanh'  # same as in paper
 MARGIN = 0.05
@@ -226,9 +226,9 @@ emb_input_2 = layers.Input(EMBEDDING_VECTOR_DIMENSION)
 
 # projection model is the one to use for queries (put in a sequence after the embedding-generator model above)
 projection_model = tf.keras.models.Sequential([
-    layers.Dense(IMAGE_VECTOR_DIMENSIONS, activation=ACTIVATION_FN, input_shape=(EMBEDDING_VECTOR_DIMENSION,))
-    # layers.Dense(128, activation='relu', input_shape=(EMBEDDING_VECTOR_DIMENSION,)),
-    # layers.Dense(IMAGE_VECTOR_DIMENSIONS, activation=None)
+    # layers.Dense(IMAGE_VECTOR_DIMENSIONS, activation=ACTIVATION_FN, input_shape=(EMBEDDING_VECTOR_DIMENSION,))
+    layers.Dense(128, activation='relu', input_shape=(EMBEDDING_VECTOR_DIMENSION,)),
+    layers.Dense(IMAGE_VECTOR_DIMENSIONS, activation=None)
     # relu on activation, max
 ])
 
@@ -329,7 +329,7 @@ def write_embeddings_for_tensorboard(image_vectors: list, labels: list, root_dir
 
 # NUM_SAMPLES_TO_DISPLAY = 10000
 NUM_SAMPLES_TO_DISPLAY = 3000
-LOG_DIR = Path('../logs/logs_projection0428_alexnet')
+LOG_DIR = Path('../logs/logs_projection0428')
 
 LOG_DIR.mkdir(exist_ok=True, parents=True)
 

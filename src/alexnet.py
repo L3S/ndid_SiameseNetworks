@@ -132,7 +132,7 @@ For different-class couples, the distance should be pushed to a high value. The 
 ## Model hyperparters
 EMBEDDING_VECTOR_DIMENSION = 4096
 # EMBEDDING_VECTOR_DIMENSION = int(1280/2)
-IMAGE_VECTOR_DIMENSIONS = 128
+IMAGE_VECTOR_DIMENSIONS = 3
 # IMAGE_VECTOR_DIMENSIONS = 3 # use for test visualization on tensorboard
 ACTIVATION_FN = 'tanh'  # same as in paper
 MARGIN = 0.05
@@ -215,9 +215,9 @@ emb_input_2 = layers.Input(EMBEDDING_VECTOR_DIMENSION)
 
 # projection model is the one to use for queries (put in a sequence after the embedding-generator model above)
 projection_model = tf.keras.models.Sequential([
-    layers.Dense(IMAGE_VECTOR_DIMENSIONS, activation=ACTIVATION_FN, input_shape=(EMBEDDING_VECTOR_DIMENSION,))
-    # layers.Dense(128, activation='relu', input_shape=(EMBEDDING_VECTOR_DIMENSION,)),
-    # layers.Dense(IMAGE_VECTOR_DIMENSIONS, activation=None)
+    # layers.Dense(IMAGE_VECTOR_DIMENSIONS, activation=ACTIVATION_FN, input_shape=(EMBEDDING_VECTOR_DIMENSION,))
+    layers.Dense(128, activation='relu', input_shape=(EMBEDDING_VECTOR_DIMENSION,)),
+    layers.Dense(IMAGE_VECTOR_DIMENSIONS, activation=None)
     # relu on activation, max
 ])
 
