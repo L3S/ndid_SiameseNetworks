@@ -37,7 +37,18 @@ def cosine_distance(vects):
     return 1 - cosine_similarity
 
 
-def loss(margin=1):
+"""
+### Contrastive Loss
+
+$ Loss = Y*Dist(v_1,v_2)^2 + (1-Y)*max(margin-D,0)^2$
+
+$Y$ is the GT target (1 if $v_1$ and $v_2$ belong to the same class, 0 otherwise). If images are from the same class, use the squared distance as loss (you want to push the distance to be close to 0 for same-class couples), otherwise keep the (squared) maximum between 0 and $margin - D$.
+
+For different-class couples, the distance should be pushed to a high value. The **margin identifies a cone inside which vectors are considered the same**. For cosine distance, which has range [0,2], **1 is NOT an adequate value**).
+
+**NOTE** In the loss implementation below, we calculate the mean of the two terms, though this should not actually be necessary (the minimizer value for the loss is the same whether the loss is divided by 2 or not).
+"""
+def ContrastiveLoss(margin=1):
     """Provides 'constrastive_loss' an enclosing scope with variable 'margin'.
 
     Arguments:
@@ -63,8 +74,6 @@ def loss(margin=1):
 
         square_dist = tf.math.square(y_pred)
         margin_square = tf.math.square(tf.math.maximum(margin - (y_pred), 0))
-        return tf.math.reduce_mean(
-            (1 - y_true) * square_dist + (y_true) * margin_square
-        )
+        return tf.math.reduce_mean((1 - y_true) * square_dist + (y_true) * margin_square)
 
     return contrastive_loss

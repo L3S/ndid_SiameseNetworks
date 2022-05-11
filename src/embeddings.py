@@ -1,19 +1,19 @@
 import sys
 sys.path.append("..")
 
-import csv
 from src.utils.hsv import *
 from src.utils.sift import *
-from src.data.embeddings import *
+from src.utils.embeddings import *
+from src.data.cifar10 import *
 
-cifar10_vds = cifar10_complete_resized()
+train_ds, test_ds = load_dataset()
+cifar10_vds = train_ds.concatenate(test_ds)
 
 
 def export_hsv(bin0=256, bin1=256, bin2=256):
     header = ['ID', 'Label', 'HSV vector']
     with open('../data/hsv_' + str(bin0) + '.csv', 'w', encoding='UTF8', newline='') as f:
         writer = csv.writer(f, delimiter=";")
-        # write the header
         writer.writerow(header)
 
         for i, (image, label) in enumerate(cifar10_vds):
@@ -42,17 +42,8 @@ def export_sift(nfeatures=8):
 
 
 def export_embeddings():
-    header = ['ID', 'Label', 'Alexnet Embeddings']
-    with open('../data/alexnet.csv', 'w', encoding='UTF8', newline='') as f:
-        writer = csv.writer(f, delimiter=";")
-        # write the header
-        writer.writerow(header)
-
-        embeddings, embeddings_labels = load_embeddings(title='cifar10_alexnet_embeddings')
-        for i, (label) in enumerate(embeddings_labels):
-            label_str = ','.join(map(str, label))
-            value_str = ','.join(map(str, embeddings[i]))
-            writer.writerow([i, label_str, value_str])
+    embeddings, embeddings_labels = load_embeddings(name='cifar10_alexnet_embeddings')
+    export_embeddings(embeddings, embeddings_labels, 'alexnet')
 
 
 # HSV

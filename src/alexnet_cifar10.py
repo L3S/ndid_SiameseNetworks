@@ -3,39 +3,27 @@ sys.path.append("..")
 
 import numpy as np
 import tensorflow as tf
-from src.data.imagenette import load_dataset3, NUM_CLASSES
-from src.utils.embeddings import save_embeddings, project_embeddings
+from src.data.cifar10 import load_dataset3, NUM_CLASSES
+from src.utils.embeddings import save_embeddings, load_embeddings, project_embeddings
 from src.utils.common import get_modeldir
-from src.model.vgg16 import VGG16Model, PRETRAIN_EPOCHS
+from src.model.alexnet import AlexNetModel, TARGET_SHAPE
 from src.model.siamese import SiameseModel
 
-model_name = 'imagenette_vgg16_small'
+model_name = 'cifar10_alexnet'
 embeddings_name = model_name + '_embeddings'
 
-TARGET_SHAPE = (32, 32)
-
-train_ds, val_ds, test_ds = load_dataset3(image_size=TARGET_SHAPE, preprocess_fn=VGG16Model.preprocess_input)
-PRETRAIN_TOTAL_STEPS = PRETRAIN_EPOCHS * len(train_ds)
+train_ds, val_ds, test_ds = load_dataset3(image_size=TARGET_SHAPE, preprocess_fn=AlexNetModel.preprocess_input)
 
 # create model
-model = tf.keras.applications.VGG16(
-    include_top=True,
-    input_shape=(32, 32, 3),
-    weights=None,
-    classes=10
-)
-
-PRETRAIN_EPOCHS = 20
-PRETRAIN_TOTAL_STEPS = PRETRAIN_EPOCHS * len(train_ds)
-
-model.compile(optimizer=tf.keras.optimizers.RMSprop(tf.keras.optimizers.schedules.CosineDecay(1e-3, PRETRAIN_TOTAL_STEPS)))
+model = AlexNetModel()
+model.compile()
 model.summary()
 
 # load weights
 # model.load_weights(get_modeldir(model_name + '.h5'))
 
 # train & save model
-model.fit(train_ds, epochs=PRETRAIN_EPOCHS, validation_data=val_ds)
+model.fit(train_ds, validation_data=val_ds)
 model.save_weights(get_modeldir(model_name + '.h5'))
 
 # evaluate
@@ -69,19 +57,13 @@ TRAIN_BATCH_SIZE = 128
 STEPS_PER_EPOCH = 1000
 
 ds = SiameseModel.prepare_dataset(embeddings, embedding_labels).batch(TRAIN_BATCH_SIZE)  # .prefetch(tf.data.AUTOTUNE)
-history = siamese.fit(
-    ds,
-    epochs=NUM_EPOCHS,
-    steps_per_epoch=STEPS_PER_EPOCH,
-    class_weight={0: 1 / NUM_CLASSES, 1: (NUM_CLASSES - 1) / NUM_CLASSES}
-)
+history = siamese.fit(ds, epochs=NUM_EPOCHS, steps_per_epoch=STEPS_PER_EPOCH, class_weight={0: 1 / NUM_CLASSES, 1: (NUM_CLASSES - 1) / NUM_CLASSES})
 
 # Build full inference model (from image to image vector):
 inference_model = siamese.get_inference_model(embedding_model)
 inference_model.save(get_modeldir(model_name + '_inference.tf'), save_format='tf', include_optimizer=False)
 
 # inference_model = tf.keras.models.load_model(get_modeldir(model_name + '_inference.tf'), compile=False)
-
 
 print('visualization')
 # compute vectors of the images and their labels, store them in a tsv file for visualization

@@ -1,32 +1,49 @@
 import tensorflow as tf
 
+BATCH_SIZE = 32
+IMAGE_SIZE = (224, 224)
 
-def normalize(image, label):
-    # image = tf.cast(image, tf.uint8)
-    # image = tf.image.per_image_standardization(image)
-    image = tf.keras.applications.vgg16.preprocess_input(image)
-    # image9 = (image / (255 / 2)) - 1
-    return image, label
+NUM_CLASSES = 10
+CLASS_NAMES = ['fish', 'dog', 'player', 'saw', 'building', 'music', 'truck', 'gas', 'ball', 'parachute']
 
 
-def load_dataset():
+def load_dataset(image_size=IMAGE_SIZE, batch_size=BATCH_SIZE, preprocess_fn=None):
     train_ds = tf.keras.utils.image_dataset_from_directory(
         directory='../datasets/imagenette2/train/',
         labels='inferred',
         label_mode='int',
-        batch_size=32,
-        image_size=(224, 224),
+        batch_size=batch_size,
+        image_size=image_size,
         interpolation='nearest'
-    ).map(normalize).prefetch(tf.data.AUTOTUNE)
+    )
 
-    val_ds = tf.keras.utils.image_dataset_from_directory(
+    test_ds = tf.keras.utils.image_dataset_from_directory(
         directory='../datasets/imagenette2/val/',
         labels='inferred',
         label_mode='int',
-        batch_size=32,
-        image_size=(224, 224),
+        batch_size=batch_size,
+        image_size=image_size,
         shuffle=False,
         interpolation='nearest'
-    ).map(normalize).prefetch(tf.data.AUTOTUNE)
+    )
 
-    return train_ds, val_ds
+    if preprocess_fn is not None:
+        train_ds = train_ds.map(preprocess_fn).prefetch(tf.data.AUTOTUNE)
+        test_ds = test_ds.map(preprocess_fn).prefetch(tf.data.AUTOTUNE)
+
+    return train_ds, test_ds
+
+
+def load_dataset3(image_size=IMAGE_SIZE, batch_size=BATCH_SIZE, preprocess_fn=None):
+    train_ds, test_ds = load_dataset(image_size=image_size, batch_size=batch_size, preprocess_fn=preprocess_fn)
+
+    test_ds_size = tf.data.experimental.cardinality(test_ds).numpy()
+    val_ds = test_ds.take(test_ds_size / 2)
+    test_ds = test_ds.skip(test_ds_size / 2)
+
+    if True:
+        print("Imagenette dataset loaded")
+        print("Training data size:", tf.data.experimental.cardinality(train_ds).numpy())
+        print("Validation data size:", tf.data.experimental.cardinality(val_ds).numpy())
+        print("Evaluation data size:", tf.data.experimental.cardinality(test_ds).numpy())
+    return train_ds, val_ds, test_ds

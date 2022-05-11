@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import cv2
 
-from src.utils.common import *
+from src.utils.plot import *
 
 
 def extract_sift(image, nfeatures=None):

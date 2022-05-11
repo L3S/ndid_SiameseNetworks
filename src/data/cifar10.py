@@ -1,24 +1,49 @@
-import numpy as np
-import _pickle as pickle
-import matplotlib.pyplot as plt
-from src.utils.common import get_datadir, process_images, process_images_couple
 import tensorflow as tf
 
+BATCH_SIZE = 32
+IMAGE_SIZE = (32, 32)
 
-def load_dataset():
-    (train_images, train_labels), (test_images, test_labels) = tf.keras.datasets.cifar10.load_data()
-    train = tf.data.Dataset.from_tensor_slices((train_images, train_labels)).batch(32)
-    val = tf.data.Dataset.from_tensor_slices((test_images, test_labels)).batch(32)
-    return train, val
-
-
-def cifar10_complete():
-    train, val = load_dataset()
-    return train.concatenate(val)
+NUM_CLASSES = 10
+CLASS_NAMES = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
 
 
-def cifar10_complete_resized():
-    ds = cifar10_complete()
-    return ds.map(process_images_couple).prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
+def load_dataset(image_size=IMAGE_SIZE, batch_size=BATCH_SIZE, preprocess_fn=None):
+    train_ds = tf.keras.utils.image_dataset_from_directory(
+        directory='../datasets/cifar10/train/',
+        labels='inferred',
+        label_mode='int',
+        batch_size=batch_size,
+        image_size=image_size,
+        interpolation='nearest'
+    )
+
+    test_ds = tf.keras.utils.image_dataset_from_directory(
+        directory='../datasets/cifar10/test/',
+        labels='inferred',
+        label_mode='int',
+        batch_size=batch_size,
+        image_size=image_size,
+        shuffle=False,
+        interpolation='nearest'
+    )
+
+    if preprocess_fn is not None:
+        train_ds = train_ds.map(preprocess_fn).prefetch(tf.data.AUTOTUNE)
+        test_ds = test_ds.map(preprocess_fn).prefetch(tf.data.AUTOTUNE)
+
+    return train_ds, test_ds
 
 
+def load_dataset3(image_size=IMAGE_SIZE, batch_size=BATCH_SIZE, preprocess_fn=None):
+    train_ds, test_ds = load_dataset(image_size=image_size, batch_size=batch_size, preprocess_fn=preprocess_fn)
+
+    train_ds_size = tf.data.experimental.cardinality(train_ds).numpy()
+    train_ds = train_ds.skip(train_ds_size / 10)
+    val_ds = train_ds.take(train_ds_size / 10)
+
+    if True:
+        print("CIFAR10 dataset loaded")
+        print("Training data size:", tf.data.experimental.cardinality(train_ds).numpy())
+        print("Validation data size:", tf.data.experimental.cardinality(val_ds).numpy())
+        print("Evaluation data size:", tf.data.experimental.cardinality(test_ds).numpy())
+    return train_ds, val_ds, test_ds

@@ -3,31 +3,19 @@ sys.path.append("..")
 
 import numpy as np
 import tensorflow as tf
-from src.data.imagenette import load_dataset3, NUM_CLASSES
+from src.data.cifar10 import load_dataset3, NUM_CLASSES
 from src.utils.embeddings import save_embeddings, project_embeddings
 from src.utils.common import get_modeldir
-from src.model.vgg16 import VGG16Model, PRETRAIN_EPOCHS
+from src.model.mobilenet import MobileNetModel, PRETRAIN_EPOCHS, TARGET_SHAPE
 from src.model.siamese import SiameseModel
 
-model_name = 'imagenette_vgg16_small'
+model_name = 'cifar10_mobilenet'
 embeddings_name = model_name + '_embeddings'
 
-TARGET_SHAPE = (32, 32)
-
-train_ds, val_ds, test_ds = load_dataset3(image_size=TARGET_SHAPE, preprocess_fn=VGG16Model.preprocess_input)
+train_ds, val_ds, test_ds = load_dataset3(image_size=TARGET_SHAPE, preprocess_fn=MobileNetModel.preprocess_input)
 PRETRAIN_TOTAL_STEPS = PRETRAIN_EPOCHS * len(train_ds)
 
-# create model
-model = tf.keras.applications.VGG16(
-    include_top=True,
-    input_shape=(32, 32, 3),
-    weights=None,
-    classes=10
-)
-
-PRETRAIN_EPOCHS = 20
-PRETRAIN_TOTAL_STEPS = PRETRAIN_EPOCHS * len(train_ds)
-
+model = MobileNetModel()
 model.compile(optimizer=tf.keras.optimizers.RMSprop(tf.keras.optimizers.schedules.CosineDecay(1e-3, PRETRAIN_TOTAL_STEPS)))
 model.summary()
 
@@ -46,7 +34,7 @@ for layer in model.layers:
     layer.trainable = False
 
 # save embeddings
-embedding_model = tf.keras.Model(inputs=model.input, outputs=model.layers[-2].output)
+embedding_model = tf.keras.Model(inputs=model.input, outputs=model.layers[-7].output)
 embedding_model.summary()
 
 embedding_vds = train_ds.concatenate(val_ds).concatenate(test_ds)
@@ -58,7 +46,7 @@ save_embeddings(embeddings, embedding_labels, embeddings_name)
 # embeddings, embedding_labels = load_embeddings(embeddings_name)
 
 # siamese is the model we train
-siamese = SiameseModel(embedding_vector_dimension=4096, image_vector_dimensions=3)
+siamese = SiameseModel(embedding_vector_dimension=1024, image_vector_dimensions=3)
 siamese.compile(loss_margin=0.05)
 siamese.summary()
 
@@ -67,6 +55,7 @@ siamese.summary()
 NUM_EPOCHS = 3
 TRAIN_BATCH_SIZE = 128
 STEPS_PER_EPOCH = 1000
+
 
 ds = SiameseModel.prepare_dataset(embeddings, embedding_labels).batch(TRAIN_BATCH_SIZE)  # .prefetch(tf.data.AUTOTUNE)
 history = siamese.fit(
@@ -84,6 +73,6 @@ inference_model.save(get_modeldir(model_name + '_inference.tf'), save_format='tf
 
 
 print('visualization')
-# compute vectors of the images and their labels, store them in a tsv file for visualization
+# compute embeddings of the images and their labels, store them in a tsv file for visualization
 image_vectors = inference_model.predict(embedding_vds)
 project_embeddings(image_vectors, embedding_labels, model_name)

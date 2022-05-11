@@ -1,8 +1,18 @@
 import numpy as np
 import _pickle as pickle
 import matplotlib.pyplot as plt
-from src.utils.common import get_datadir, process_images
+from src.utils.common import get_datadir, resize_image, normalize_image
 import tensorflow as tf
+
+target_shape = (227, 227)
+
+
+def process_images(image):
+    # Resize images from 32x32 to 277x277
+    image = resize_image(image, target_shape)
+    image = normalize_image(image)
+    return image
+
 
 def shuffle_arrays(arrays, set_seed=-1):
     """Shuffles arrays in-place, in the same order, along axis=0

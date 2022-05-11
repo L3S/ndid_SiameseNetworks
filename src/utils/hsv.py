@@ -1,8 +1,7 @@
-import matplotlib.pyplot as plt
 import numpy as np
 import cv2
 
-from src.utils.common import *
+from src.utils.plot import *
 
 
 def extract_hsv(image, bin0=256, bin1=256, bin2=256):
