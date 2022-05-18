@@ -10,7 +10,7 @@ TARGET_SHAPE = (227, 227)
 PRETRAIN_EPOCHS = 50
 
 class AlexNetModel(Sequential):
-    def __init__(self):
+    def __init__(self, classes=10):
         super(AlexNetModel, self).__init__([
             layers.Conv2D(filters=96, kernel_size=(11, 11), strides=(4, 4), activation='relu', input_shape=TARGET_SHAPE + (3,)),
             layers.BatchNormalization(),
@@ -39,7 +39,7 @@ class AlexNetModel(Sequential):
             layers.Dense(4096, activation='relu'),
             layers.Dropout(rate=0.5),
 
-            layers.Dense(name='unfreeze', units=10, activation='softmax')
+            layers.Dense(name='unfreeze', units=classes, activation='softmax')
         ])
 
     def compile(self,

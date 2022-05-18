@@ -3,6 +3,7 @@ import time
 import _pickle as pickle
 import numpy as np
 import tensorflow as tf
+from tqdm import tqdm
 from pathlib import Path
 from tensorboard.plugins import projector
 from google.protobuf import text_format
@@ -33,6 +34,33 @@ def export_embeddings(values, labels, name='embeddings'):
             label_str = ','.join(map(str, label))
             value_str = ','.join(map(str, values[i]))
             writer.writerow([i, label_str, value_str])
+
+
+def calc_vectors(ds, model):
+    ds_vectors = []
+    ds_labels = []
+    for ds_batch in tqdm(ds):
+        images, labels = ds_batch
+        predictions = model(images)
+        ds_vectors.extend(predictions.numpy().tolist())
+        ds_labels.extend(labels.numpy().tolist())
+
+    return np.array(ds_vectors), np.array(ds_labels)
+
+
+def evaluate_vectors(values, labels):
+    total = len(values)
+    match = 0
+    missmatch = 0
+
+    for i, (expected) in enumerate(labels):
+        pred = np.argmax(values[i])
+        if expected == pred:
+            match += 1
+        else:
+            missmatch += 1
+
+    return match / total
 
 
 def project_embeddings(image_vectors, labels, name='projection'):

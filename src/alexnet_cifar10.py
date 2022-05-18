@@ -56,7 +56,7 @@ NUM_EPOCHS = 3
 TRAIN_BATCH_SIZE = 128
 STEPS_PER_EPOCH = 1000
 
-ds = SiameseModel.prepare_dataset(embeddings, embedding_labels).batch(TRAIN_BATCH_SIZE)  # .prefetch(tf.data.AUTOTUNE)
+ds = SiameseModel.prepare_dataset(embeddings, embedding_labels)
 history = siamese.fit(ds, epochs=NUM_EPOCHS, steps_per_epoch=STEPS_PER_EPOCH, class_weight={0: 1 / NUM_CLASSES, 1: (NUM_CLASSES - 1) / NUM_CLASSES})
 
 # Build full inference model (from image to image vector):

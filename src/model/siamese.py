@@ -1,5 +1,6 @@
 from src.utils.common import *
-from src.utils.distance import cosine_distance, ContrastiveLoss
+import tensorflow_addons as tfa
+from src.utils.distance import cosine_distance, euclidean_distance
 from tensorflow.keras import layers, callbacks, Model
 
 tensorboard_cb = callbacks.TensorBoard(get_logdir('siamese/fit'))
@@ -7,11 +8,11 @@ tensorboard_cb = callbacks.TensorBoard(get_logdir('siamese/fit'))
 EMBEDDING_VECTOR_DIMENSION = 4096
 IMAGE_VECTOR_DIMENSIONS = 3  # use for test visualization on tensorboard
 ACTIVATION_FN = 'tanh'  # same as in paper
-MARGIN = 0.05
+MARGIN = 0.5
 
-TRAIN_BATCH_SIZE = 128
-STEPS_PER_EPOCH = 1000
 NUM_EPOCHS = 3
+TRAIN_BATCH_SIZE = 128
+STEPS_PER_EPOCH = 100  # 1000
 
 
 @tf.function
@@ -45,12 +46,14 @@ class SiameseModel(Model):
         self.projection_model = tf.keras.models.Sequential([
             # layers.Dense(image_vector_dimensions, activation=ACTIVATION_FN, input_shape=(embedding_vector_dimension,))
             layers.Dense(128, activation='relu', input_shape=(embedding_vector_dimension,)),
-            layers.Dense(image_vector_dimensions, activation=None)
+            layers.Dense(image_vector_dimensions, activation=None),
+            layers.Lambda(lambda x: tf.keras.backend.l2_normalize(x, axis=1)),
         ])
 
         v1 = self.projection_model(emb_input_1)
         v2 = self.projection_model(emb_input_2)
         computed_distance = layers.Lambda(cosine_distance)([v1, v2])
+        # computed_distance = layers.Lambda(euclidean_distance)([v1, v2])
 
         super(SiameseModel, self).__init__(inputs=[emb_input_1, emb_input_2], outputs=computed_distance)
 
@@ -68,9 +71,8 @@ class SiameseModel(Model):
     def compile(self,
                 optimizer=tf.keras.optimizers.RMSprop(),
                 loss_margin=MARGIN,
-                metrics=['accuracy'],
                 **kwargs):
-        super().compile(optimizer=optimizer, loss=ContrastiveLoss(margin=loss_margin), metrics=metrics, **kwargs)
+        super().compile(optimizer=optimizer, loss=tfa.losses.ContrastiveLoss(margin=loss_margin), **kwargs)
 
     def fit(self, x=None, y=None, batch_size=None, epochs=NUM_EPOCHS, steps_per_epoch=STEPS_PER_EPOCH, callbacks=[tensorboard_cb], **kwargs):
         return super().fit(x=x, y=y, batch_size=batch_size, epochs=epochs, steps_per_epoch=steps_per_epoch, callbacks=callbacks, **kwargs)
@@ -100,4 +102,5 @@ class SiameseModel(Model):
         # resample to the desired distribution
         # train_ds = train_ds.rejection_resample(lambda embs, target: tf.cast(target, tf.int32), [0.5, 0.5], initial_dist=[0.9, 0.1])
         # train_ds = train_ds.map(lambda _, vals: vals) # discard the prepended "selected" class from the rejction resample, since we aleady have it available
+        train_ds = train_ds.batch(TRAIN_BATCH_SIZE)  # .prefetch(tf.data.AUTOTUNE)
         return train_ds

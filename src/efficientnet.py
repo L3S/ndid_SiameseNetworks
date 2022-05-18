@@ -81,7 +81,7 @@ NUM_EPOCHS = 50
 TRAIN_BATCH_SIZE = 128
 STEPS_PER_EPOCH = 2000
 
-ds = SiameseModel.prepare_dataset(embeddings, labels).batch(TRAIN_BATCH_SIZE)  # .prefetch(tf.data.AUTOTUNE)
+ds = SiameseModel.prepare_dataset(embeddings, labels)
 history = siamese.fit(
     ds,
     epochs=NUM_EPOCHS,
