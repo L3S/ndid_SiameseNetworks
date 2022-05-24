@@ -57,10 +57,6 @@ class SiameseModel(Model):
 
         super(SiameseModel, self).__init__(inputs=[emb_input_1, emb_input_2], outputs=computed_distance)
 
-    # def call(self, inputs):
-    #     """ Projection model is a model from embeddings to image vector """
-    #     return self.projection_model(inputs)
-
     def get_projection_model(self):
         """ Projection model is a model from embeddings to image vector """
         return self.projection_model
@@ -100,6 +96,25 @@ class SiameseModel(Model):
         # TODO: change for triplet loss implementation
         # because of shuffling, we can take two adjacent tuples as a randomly matched pair
         train_ds = embeddings_ds.window(2, drop_remainder=True)
+        train_ds = train_ds.flat_map(lambda w1, w2: tf.data.Dataset.zip((w1.batch(2), w2.batch(2))))  # see https://stackoverflow.com/questions/55429307/how-to-use-windows-created-by-the-dataset-window-method-in-tensorflow-2-0
+        # generate the target label depending on whether the labels match or not
+        train_ds = train_ds.map(make_label_for_pair, num_parallel_calls=tf.data.AUTOTUNE, deterministic=False)
+        # resample to the desired distribution
+        # train_ds = train_ds.rejection_resample(lambda embs, target: tf.cast(target, tf.int32), [0.5, 0.5], initial_dist=[0.9, 0.1])
+        # train_ds = train_ds.map(lambda _, vals: vals) # discard the prepended "selected" class from the rejction resample, since we aleady have it available
+        train_ds = train_ds.batch(TRAIN_BATCH_SIZE)  # .prefetch(tf.data.AUTOTUNE)
+        return train_ds
+
+    @staticmethod
+    def prepare_tuples(embeddings, labels):
+        embeddings_ds = tf.data.Dataset.zip((
+            tf.data.Dataset.from_tensor_slices(embeddings),
+            tf.data.Dataset.from_tensor_slices(labels)
+        )).cache().shuffle(1000).repeat()
+
+        # TODO: change for triplet loss implementation
+        # because of shuffling, we can take two adjacent tuples as a randomly matched pair
+        train_ds = embeddings_ds.window(3, drop_remainder=True)
         train_ds = train_ds.flat_map(lambda w1, w2: tf.data.Dataset.zip((w1.batch(2), w2.batch(2))))  # see https://stackoverflow.com/questions/55429307/how-to-use-windows-created-by-the-dataset-window-method-in-tensorflow-2-0
         # generate the target label depending on whether the labels match or not
         train_ds = train_ds.map(make_label_for_pair, num_parallel_calls=tf.data.AUTOTUNE, deterministic=False)

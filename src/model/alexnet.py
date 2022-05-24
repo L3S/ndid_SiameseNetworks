@@ -54,7 +54,9 @@ class AlexNetModel(Sequential):
         return super().fit(x=x, y=y, batch_size=batch_size, epochs=epochs, callbacks=callbacks, **kwargs)
 
     def get_embedding_model(self):
-        return Model(inputs=self.input, outputs=self.layers[-2].output)
+        core = Model(inputs=self.input, outputs=self.layers[-2].output)
+        for layer in core.layers: layer.trainable = False
+        return core
 
     @staticmethod
     def preprocess_input(image, label):

@@ -33,9 +33,6 @@ model.load_weights(get_modeldir(model_name + '.h5'))
 # print('evaluating...')
 # model.evaluate(test_ds)
 
-for layer in model.layers:
-    layer.trainable = False
-
 print('calculating embeddings...')
 embedding_model = model.get_embedding_model()
 embedding_model.summary()

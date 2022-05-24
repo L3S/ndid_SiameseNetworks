@@ -38,10 +38,9 @@ class MobileNetModel(Model):
 
     def get_embedding_model(self):
         core = Model(inputs=self.input, outputs=self.layers[-7].output)
-        return Sequential([
-            core,
-            layers.Flatten(),
-        ])
+        core = Sequential([core, layers.Flatten()])
+        for layer in core.layers: layer.trainable = False
+        return core
 
     @staticmethod
     def preprocess_input(image, label):
