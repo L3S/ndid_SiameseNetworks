@@ -6,12 +6,10 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 from scipy.spatial import distance_matrix
 from src.data.simple3 import load_dataset3, NUM_CLASSES
-from src.utils.embeddings import project_embeddings, calc_vectors
+from src.utils.embeddings import project_embeddings, calc_vectors, save_embeddings
 from src.utils.common import get_modeldir
 from src.model.alexnet import AlexNetModel, TARGET_SHAPE
 from src.model.siamese import SiameseModel
-
-# tf.config.run_functions_eagerly(True)
 
 model_name = 'simple3_alexnet'
 embeddings_name = model_name + '_embeddings'
@@ -35,9 +33,6 @@ model.load_weights(get_modeldir(model_name + '.h5'))
 # print('evaluating...')
 # model.evaluate(test_ds)
 
-# alexnet_vectors, alexnet_labels = calc_vectors(comb_ds, model)
-# project_embeddings(alexnet_vectors, alexnet_labels, model_name + '_alexnet')
-
 for layer in model.layers:
     layer.trainable = False
 
@@ -46,7 +41,10 @@ embedding_model = tf.keras.Model(inputs=model.input, outputs=model.layers[-2].ou
 embedding_model.summary()
 
 emb_vectors, emb_labels = calc_vectors(comb_ds, embedding_model)
-project_embeddings(emb_vectors, emb_labels, model_name + '_emb')
+# project_embeddings(emb_vectors, emb_labels, model_name + '_emb')
+save_embeddings(emb_vectors, emb_labels, embeddings_name)
+
+# emb_vectors, emb_labels = load_embeddings(embeddings_name)
 
 # siamese is the model we train
 siamese = SiameseModel(embedding_vector_dimension=4096, image_vector_dimensions=3)

@@ -12,7 +12,7 @@ MARGIN = 0.5
 
 NUM_EPOCHS = 3
 TRAIN_BATCH_SIZE = 128
-STEPS_PER_EPOCH = 100  # 1000
+STEPS_PER_EPOCH = 100  # TODO: try restore 1000
 
 
 @tf.function
@@ -56,6 +56,10 @@ class SiameseModel(Model):
         # computed_distance = layers.Lambda(euclidean_distance)([v1, v2])
 
         super(SiameseModel, self).__init__(inputs=[emb_input_1, emb_input_2], outputs=computed_distance)
+
+    # def call(self, inputs):
+    #     """ Projection model is a model from embeddings to image vector """
+    #     return self.projection_model(inputs)
 
     def get_projection_model(self):
         """ Projection model is a model from embeddings to image vector """
