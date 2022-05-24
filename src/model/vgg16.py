@@ -8,6 +8,7 @@ BATCH_SIZE = 32
 TARGET_SHAPE = (224, 224)
 
 PRETRAIN_EPOCHS = 20
+EMBEDDING_VECTOR_DIMENSION = 4096
 
 class VGG16Model(Model):
     def __init__(self, input_shape=TARGET_SHAPE, weights=None, **kwargs):
@@ -48,6 +49,9 @@ class VGG16Model(Model):
 
     def fit(self, x=None, y=None, batch_size=None, epochs=PRETRAIN_EPOCHS, callbacks=[tensorboard_cb], **kwargs):
         return super().fit(x=x, y=y, batch_size=batch_size, epochs=epochs, callbacks=callbacks, **kwargs)
+
+    def get_embedding_model(self):
+        return Model(inputs=self.input, outputs=self.layers[-2].output)
 
     @staticmethod
     def preprocess_input(image, label):

@@ -1,5 +1,5 @@
 import tensorflow as tf
-from tensorflow.keras import layers, callbacks, Sequential
+from tensorflow.keras import layers, callbacks, Sequential, Model
 from src.utils.common import get_logdir
 
 tensorboard_cb = callbacks.TensorBoard(get_logdir('alexnet/fit'))
@@ -8,6 +8,7 @@ BATCH_SIZE = 32
 TARGET_SHAPE = (227, 227)
 
 PRETRAIN_EPOCHS = 50
+EMBEDDING_VECTOR_DIMENSION = 4096
 
 class AlexNetModel(Sequential):
     def __init__(self, classes=10):
@@ -51,6 +52,9 @@ class AlexNetModel(Sequential):
 
     def fit(self, x=None, y=None, batch_size=None, epochs=PRETRAIN_EPOCHS, callbacks=[tensorboard_cb], **kwargs):
         return super().fit(x=x, y=y, batch_size=batch_size, epochs=epochs, callbacks=callbacks, **kwargs)
+
+    def get_embedding_model(self):
+        return Model(inputs=self.input, outputs=self.layers[-2].output)
 
     @staticmethod
     def preprocess_input(image, label):

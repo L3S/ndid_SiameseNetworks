@@ -24,7 +24,7 @@ save_embeddings(emb_vectors, emb_labels, embeddings_name)
 
 # siamese is the model we train
 siamese = SiameseModel(embedding_vector_dimension=1280, image_vector_dimensions=128)
-siamese.compile(loss_margin=0.005)
+siamese.compile(loss_margin=0.05)
 siamese.summary()
 
 ds = SiameseModel.prepare_dataset(emb_vectors, emb_labels)

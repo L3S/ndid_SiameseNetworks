@@ -1,5 +1,5 @@
 import tensorflow as tf
-from tensorflow.keras import layers, callbacks, Model
+from tensorflow.keras import layers, callbacks, Model, Sequential
 from src.utils.common import get_logdir
 
 tensorboard_cb = callbacks.TensorBoard(get_logdir('mobilenet/fit'))
@@ -8,6 +8,7 @@ BATCH_SIZE = 32
 TARGET_SHAPE = (224, 224)
 
 PRETRAIN_EPOCHS = 20
+EMBEDDING_VECTOR_DIMENSION = 1024
 
 class MobileNetModel(Model):
     def __init__(self):
@@ -34,6 +35,13 @@ class MobileNetModel(Model):
 
     def fit(self, x=None, y=None, batch_size=None, epochs=PRETRAIN_EPOCHS, callbacks=[tensorboard_cb], **kwargs):
         return super().fit(x=x, y=y, batch_size=batch_size, epochs=epochs, callbacks=callbacks, **kwargs)
+
+    def get_embedding_model(self):
+        core = Model(inputs=self.input, outputs=self.layers[-7].output)
+        return Sequential([
+            core,
+            layers.Flatten(),
+        ])
 
     @staticmethod
     def preprocess_input(image, label):

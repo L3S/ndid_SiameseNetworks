@@ -25,7 +25,7 @@ save_embeddings(emb_vectors, emb_labels, embeddings_name)
 
 # siamese is the model we train
 siamese = SiameseModel(embedding_vector_dimension=384, image_vector_dimensions=512)
-siamese.compile(loss_margin=0.005, optimizer=tf.keras.optimizers.Adam(learning_rate=0.001))
+siamese.compile(loss_margin=0.05, optimizer=tf.keras.optimizers.Adam(learning_rate=0.001))
 siamese.summary()
 
 ds = SiameseModel.prepare_dataset(emb_vectors, emb_labels)

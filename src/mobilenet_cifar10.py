@@ -5,7 +5,7 @@ import tensorflow as tf
 from src.data.cifar10 import load_dataset3, NUM_CLASSES
 from src.utils.embeddings import save_embeddings, project_embeddings, calc_vectors
 from src.utils.common import get_modeldir
-from src.model.mobilenet import MobileNetModel, PRETRAIN_EPOCHS, TARGET_SHAPE
+from src.model.mobilenet import MobileNetModel, PRETRAIN_EPOCHS, TARGET_SHAPE, EMBEDDING_VECTOR_DIMENSION
 from src.model.siamese import SiameseModel
 
 model_name = 'cifar10_mobilenet'
@@ -34,7 +34,7 @@ for layer in model.layers:
     layer.trainable = False
 
 print('calculating embeddings...')
-embedding_model = tf.keras.Model(inputs=model.input, outputs=model.layers[-7].output)
+embedding_model = model.get_embedding_model()
 embedding_model.summary()
 
 emb_vectors, emb_labels = calc_vectors(comb_ds, embedding_model)
@@ -43,7 +43,7 @@ save_embeddings(emb_vectors, emb_labels, embeddings_name)
 # emb_vectors, emb_labels = load_embeddings(embeddings_name)
 
 # siamese is the model we train
-siamese = SiameseModel(embedding_vector_dimension=1024, image_vector_dimensions=3)
+siamese = SiameseModel(embedding_vector_dimension=EMBEDDING_VECTOR_DIMENSION, image_vector_dimensions=3)
 siamese.compile(loss_margin=0.05)
 siamese.summary()
 
