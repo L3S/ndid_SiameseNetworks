@@ -49,11 +49,11 @@ history = siamese.fit(ds, class_weight={0: 1 / NUM_CLASSES, 1: (NUM_CLASSES - 1)
 
 # Build full inference model (from image to image vector):
 inference_model = siamese.get_inference_model(embedding_model)
-inference_model.save(get_modeldir(model_name + '_inference.tf'), save_format='tf', include_optimizer=False)
+inference_model.save(get_modeldir(model_name + '_inference.tf'))
 
 # inference_model = tf.keras.models.load_model(get_modeldir(model_name + '_inference.tf'), compile=False)
 
 print('visualization')
 # compute vectors of the images and their labels, store them in a tsv file for visualization
 projection_vectors = siamese.get_projection_model().predict(emb_vectors)
-project_embeddings(projection_vectors, emb_labels, model_name + '_siamese2')
+project_embeddings(projection_vectors, emb_labels, model_name + '_siamese')

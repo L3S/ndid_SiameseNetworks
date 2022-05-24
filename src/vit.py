@@ -33,7 +33,7 @@ history = siamese.fit(ds, class_weight={0: 1 / NUM_CLASSES, 1: (NUM_CLASSES - 1)
 
 # Build full inference model (from image to image vector):
 inference_model = siamese.get_inference_model(model)
-inference_model.save(get_modeldir(model_name + '_inference.tf'), save_format='tf', include_optimizer=False)
+inference_model.save(get_modeldir(model_name + '_inference.tf'))
 
 # inference_model = tf.keras.models.load_model(get_modeldir(model_name + '_inference.tf'), compile=False)
 

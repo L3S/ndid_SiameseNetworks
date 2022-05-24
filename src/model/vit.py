@@ -14,7 +14,7 @@ class VitModel(Sequential):
         super(VitModel, self).__init__([
             hub.KerasLayer(MODEL_URL, trainable=False)  # EfficientNet V2 S backbone, frozen weights
         ])
-        self.build(TARGET_SHAPE + (3,))
+        self.build((None,) + TARGET_SHAPE + (3,))
 
     def compile(self, metrics=['accuracy'], **kwargs):
         super().compile(metrics=metrics, **kwargs)
