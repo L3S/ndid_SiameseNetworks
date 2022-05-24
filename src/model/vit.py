@@ -12,8 +12,8 @@ MODEL_URL = "https://tfhub.dev/sayakpaul/vit_s16_fe/1"
 class VitModel(Sequential):
     def __init__(self):
         super(VitModel, self).__init__([
-            hub.KerasLayer(MODEL_URL, trainable=False)  # EfficientNet V2 S backbone, frozen weights
-        ])
+            hub.KerasLayer(MODEL_URL, trainable=False)
+        ], name='vit')
         self.build((None,) + TARGET_SHAPE + (3,))
 
     def compile(self, metrics=['accuracy'], **kwargs):

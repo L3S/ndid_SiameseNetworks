@@ -24,7 +24,7 @@ class MobileNetModel(Model):
         x = layers.Activation(activation='softmax', name='predictions')(x)
 
         x = tf.keras.applications.mobilenet.preprocess_input(x)
-        super(MobileNetModel, self).__init__(inputs=core.input, outputs=x)
+        super(MobileNetModel, self).__init__(inputs=core.input, outputs=x, name='mobilenet')
 
     def compile(self,
                 optimizer=tf.keras.optimizers.RMSprop(),
@@ -38,7 +38,7 @@ class MobileNetModel(Model):
 
     def get_embedding_model(self):
         core = Model(inputs=self.input, outputs=self.layers[-7].output)
-        core = Sequential([core, layers.Flatten()])
+        core = Sequential([core, layers.Flatten()], name='emb_' + self.name)
         for layer in core.layers: layer.trainable = False
         return core
 

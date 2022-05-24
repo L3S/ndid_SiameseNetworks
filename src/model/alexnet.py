@@ -41,7 +41,7 @@ class AlexNetModel(Sequential):
             layers.Dropout(rate=0.5),
 
             layers.Dense(name='unfreeze', units=classes, activation='softmax')
-        ])
+        ], name='alexnet')
 
     def compile(self,
                 optimizer=tf.optimizers.SGD(learning_rate=0.001),
@@ -54,7 +54,7 @@ class AlexNetModel(Sequential):
         return super().fit(x=x, y=y, batch_size=batch_size, epochs=epochs, callbacks=callbacks, **kwargs)
 
     def get_embedding_model(self):
-        core = Model(inputs=self.input, outputs=self.layers[-2].output)
+        core = Model(inputs=self.input, outputs=self.layers[-2].output, name='emb_' + self.name)
         for layer in core.layers: layer.trainable = False
         return core
 

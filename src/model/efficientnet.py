@@ -13,7 +13,7 @@ class EfficientNetModel(Sequential):
     def __init__(self):
         super(EfficientNetModel, self).__init__([
             hub.KerasLayer(MODEL_URL, trainable=False)  # EfficientNet V2 S backbone, frozen weights
-        ])
+        ], name='efficientnet')
         self.build((None,) + TARGET_SHAPE + (3,))
 
     def compile(self, metrics=['accuracy'], **kwargs):

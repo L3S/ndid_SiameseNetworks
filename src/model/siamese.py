@@ -55,7 +55,7 @@ class SiameseModel(Model):
         computed_distance = layers.Lambda(cosine_distance)([v1, v2])
         # computed_distance = layers.Lambda(euclidean_distance)([v1, v2])
 
-        super(SiameseModel, self).__init__(inputs=[emb_input_1, emb_input_2], outputs=computed_distance)
+        super(SiameseModel, self).__init__(inputs=[emb_input_1, emb_input_2], outputs=computed_distance, name='siamese')
 
     def get_projection_model(self):
         """ Projection model is a model from embeddings to image vector """
