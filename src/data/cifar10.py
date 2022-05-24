@@ -7,7 +7,7 @@ NUM_CLASSES = 10
 CLASS_NAMES = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
 
 
-def load_dataset(image_size=IMAGE_SIZE, batch_size=BATCH_SIZE, preprocess_fn=None):
+def load_dataset(image_size=IMAGE_SIZE, batch_size=BATCH_SIZE, map_fn=None):
     train_ds = tf.keras.utils.image_dataset_from_directory(
         directory='../datasets/cifar10/train/',
         labels='inferred',
@@ -27,15 +27,15 @@ def load_dataset(image_size=IMAGE_SIZE, batch_size=BATCH_SIZE, preprocess_fn=Non
         interpolation='nearest'
     )
 
-    if preprocess_fn is not None:
-        train_ds = train_ds.map(preprocess_fn).prefetch(tf.data.AUTOTUNE)
-        test_ds = test_ds.map(preprocess_fn).prefetch(tf.data.AUTOTUNE)
+    if map_fn is not None:
+        train_ds = train_ds.map(map_fn).prefetch(tf.data.AUTOTUNE)
+        test_ds = test_ds.map(map_fn).prefetch(tf.data.AUTOTUNE)
 
     return train_ds, test_ds
 
 
-def load_dataset3(image_size=IMAGE_SIZE, batch_size=BATCH_SIZE, preprocess_fn=None):
-    train_ds, test_ds = load_dataset(image_size=image_size, batch_size=batch_size, preprocess_fn=preprocess_fn)
+def load_dataset3(image_size=IMAGE_SIZE, batch_size=BATCH_SIZE, map_fn=None):
+    train_ds, test_ds = load_dataset(image_size=image_size, batch_size=batch_size, map_fn=map_fn)
 
     train_ds_size = tf.data.experimental.cardinality(train_ds).numpy()
     train_ds = train_ds.skip(train_ds_size / 10)

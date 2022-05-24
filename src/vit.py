@@ -11,7 +11,7 @@ from src.model.siamese import SiameseModel
 model_name = 'cifar10_vit'
 embeddings_name = model_name + '_embeddings'
 
-train_ds, val_ds, test_ds = load_dataset3(image_size=TARGET_SHAPE, batch_size=BATCH_SIZE, preprocess_fn=VitModel.preprocess_input)
+train_ds, val_ds, test_ds = load_dataset3(image_size=TARGET_SHAPE, batch_size=BATCH_SIZE, map_fn=VitModel.preprocess_input)
 comb_ds = train_ds.concatenate(val_ds).concatenate(test_ds)
 
 model = VitModel()
@@ -24,7 +24,7 @@ save_embeddings(emb_vectors, emb_labels, embeddings_name)
 # emb_vectors, emb_labels = load_embeddings(embeddings_name)
 
 # siamese is the model we train
-siamese = SiameseModel(embedding_vector_dimension=384, image_vector_dimensions=512)
+siamese = SiameseModel(embedding_vector_dimension=384, image_vector_dimensions=3)
 siamese.compile(loss_margin=0.05, optimizer=tf.keras.optimizers.Adam(learning_rate=0.001))
 siamese.summary()
 

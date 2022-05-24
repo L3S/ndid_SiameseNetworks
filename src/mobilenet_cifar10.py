@@ -11,7 +11,7 @@ from src.model.siamese import SiameseModel
 model_name = 'cifar10_mobilenet'
 embeddings_name = model_name + '_embeddings'
 
-train_ds, val_ds, test_ds = load_dataset3(image_size=TARGET_SHAPE, preprocess_fn=MobileNetModel.preprocess_input)
+train_ds, val_ds, test_ds = load_dataset3(image_size=TARGET_SHAPE, map_fn=MobileNetModel.preprocess_input)
 comb_ds = train_ds.concatenate(val_ds).concatenate(test_ds)
 PRETRAIN_TOTAL_STEPS = PRETRAIN_EPOCHS * len(train_ds)
 
@@ -55,6 +55,6 @@ inference_model.save(get_modeldir(model_name + '_inference.tf'))
 
 
 print('visualization')
-# compute embeddings of the images and their labels, store them in a tsv file for visualization
+# compute vectors of the images and their labels, store them in a tsv file for visualization
 siamese_vectors, siamese_labels = calc_vectors(comb_ds, inference_model)
 project_embeddings(siamese_vectors, siamese_labels, model_name + '_siamese')

@@ -13,7 +13,7 @@ embeddings_name = model_name + '_embeddings'
 
 TARGET_SHAPE = (32, 32)
 
-train_ds, val_ds, test_ds = load_dataset3(image_size=TARGET_SHAPE, preprocess_fn=VGG16Model.preprocess_input)
+train_ds, val_ds, test_ds = load_dataset3(image_size=TARGET_SHAPE, map_fn=VGG16Model.preprocess_input)
 comb_ds = train_ds.concatenate(val_ds).concatenate(test_ds)
 PRETRAIN_TOTAL_STEPS = PRETRAIN_EPOCHS * len(train_ds)
 

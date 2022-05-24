@@ -8,24 +8,23 @@ from src.utils.common import get_modeldir
 from src.model.mobilenet import MobileNetModel, PRETRAIN_EPOCHS, TARGET_SHAPE, EMBEDDING_VECTOR_DIMENSION
 from src.model.siamese import SiameseModel
 
-model_name = 'imagenet_mobilenet'
+model_name = 'imagenette_mobilenet'
 embeddings_name = model_name + '_embeddings'
 
-train_ds, val_ds, test_ds = load_dataset3(image_size=TARGET_SHAPE, preprocess_fn=MobileNetModel.preprocess_input)
+train_ds, val_ds, test_ds = load_dataset3(image_size=TARGET_SHAPE, map_fn=MobileNetModel.preprocess_input)
 comb_ds = train_ds.concatenate(val_ds).concatenate(test_ds)
 PRETRAIN_TOTAL_STEPS = PRETRAIN_EPOCHS * len(train_ds)
 
-# create model
 model = MobileNetModel()
 model.compile(optimizer=tf.keras.optimizers.RMSprop(tf.keras.optimizers.schedules.CosineDecay(1e-3, PRETRAIN_TOTAL_STEPS)))
 model.summary()
 
 # load weights
-model.load_weights(get_modeldir(model_name + '.h5'))
+# model.load_weights(get_modeldir(model_name + '.h5'))
 
 # train & save model
-# model.fit(train_ds, epochs=PRETRAIN_EPOCHS, validation_data=val_ds)
-# model.save_weights(get_modeldir(model_name + '.h5'))
+model.fit(train_ds, epochs=PRETRAIN_EPOCHS, validation_data=val_ds)
+model.save_weights(get_modeldir(model_name + '.h5'))
 
 # evaluate
 print('evaluating...')

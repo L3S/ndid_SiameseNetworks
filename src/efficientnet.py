@@ -10,7 +10,7 @@ from src.model.siamese import SiameseModel
 model_name = 'cifar10_efficientnet'
 embeddings_name = model_name + '_embeddings'
 
-train_ds, val_ds, test_ds = load_dataset3(image_size=TARGET_SHAPE, batch_size=BATCH_SIZE, preprocess_fn=EfficientNetModel.preprocess_input)
+train_ds, val_ds, test_ds = load_dataset3(image_size=TARGET_SHAPE, batch_size=BATCH_SIZE, map_fn=EfficientNetModel.preprocess_input)
 comb_ds = train_ds.concatenate(val_ds).concatenate(test_ds)
 
 model = EfficientNetModel()

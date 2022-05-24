@@ -7,7 +7,7 @@ NUM_CLASSES = 3
 CLASS_NAMES = ['building', 'dog', 'player']
 
 
-def load_dataset(image_size=IMAGE_SIZE, batch_size=BATCH_SIZE, preprocess_fn=None):
+def load_dataset(image_size=IMAGE_SIZE, batch_size=BATCH_SIZE, map_fn=None):
     ds = tf.keras.utils.image_dataset_from_directory(
         directory='../datasets/simple3/',
         labels='inferred',
@@ -17,14 +17,14 @@ def load_dataset(image_size=IMAGE_SIZE, batch_size=BATCH_SIZE, preprocess_fn=Non
         interpolation='nearest'
     )
 
-    if preprocess_fn is not None:
-        ds = ds.map(preprocess_fn).prefetch(tf.data.AUTOTUNE)
+    if map_fn is not None:
+        ds = ds.map(map_fn).prefetch(tf.data.AUTOTUNE)
 
     return ds
 
 
-def load_dataset3(image_size=IMAGE_SIZE, batch_size=BATCH_SIZE, preprocess_fn=None):
-    ds = load_dataset(image_size=image_size, batch_size=batch_size, preprocess_fn=preprocess_fn)
+def load_dataset3(image_size=IMAGE_SIZE, batch_size=BATCH_SIZE, map_fn=None):
+    ds = load_dataset(image_size=image_size, batch_size=batch_size, map_fn=map_fn)
 
     ds_size = tf.data.experimental.cardinality(ds).numpy()
     train_ds = ds.take(ds_size * 0.6)

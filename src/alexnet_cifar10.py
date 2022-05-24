@@ -11,7 +11,7 @@ from src.model.siamese import SiameseModel
 model_name = 'cifar10_alexnet'
 embeddings_name = model_name + '_embeddings'
 
-train_ds, val_ds, test_ds = load_dataset3(image_size=TARGET_SHAPE, preprocess_fn=AlexNetModel.preprocess_input)
+train_ds, val_ds, test_ds = load_dataset3(image_size=TARGET_SHAPE, map_fn=AlexNetModel.preprocess_input)
 comb_ds = train_ds.concatenate(val_ds).concatenate(test_ds)
 
 # create model

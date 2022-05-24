@@ -1,6 +1,6 @@
+import time
 import tensorflow as tf
 from os import path, curdir
-import time
 
 
 def normalize_image(image):
