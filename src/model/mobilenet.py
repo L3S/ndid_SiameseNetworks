@@ -38,7 +38,7 @@ class MobileNetModel(Model):
 
     def get_embedding_model(self):
         core = Model(inputs=self.input, outputs=self.layers[-7].output)
-        core = Sequential([core, layers.Flatten()], name='emb_' + self.name)
+        core = Sequential([core, layers.Flatten()], name=self.name + '_emb')
         for layer in core.layers: layer.trainable = False
         return core
 

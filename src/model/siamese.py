@@ -8,7 +8,7 @@ tensorboard_cb = callbacks.TensorBoard(get_logdir('siamese/fit'))
 EMBEDDING_VECTOR_DIMENSION = 4096
 IMAGE_VECTOR_DIMENSIONS = 3  # use for test visualization on tensorboard
 ACTIVATION_FN = 'tanh'  # same as in paper
-MARGIN = 0.5
+DEFAULT_MARGIN = 0.5
 
 NUM_EPOCHS = 3
 TRAIN_BATCH_SIZE = 128
@@ -36,42 +36,42 @@ class SiameseModel(Model):
     Note that, when using cosine distance, the margin needs to be reduced from its default value of 1 (see below).
     """
 
-    def __init__(self, embedding_vector_dimension=EMBEDDING_VECTOR_DIMENSION, image_vector_dimensions=IMAGE_VECTOR_DIMENSIONS):
+    def __init__(self, embedding_model, image_vector_dimensions=IMAGE_VECTOR_DIMENSIONS):
         super().__init__()
 
-        emb_input_1 = layers.Input(embedding_vector_dimension)
-        emb_input_2 = layers.Input(embedding_vector_dimension)
+        self.embedding_model = embedding_model
+        self.embedding_vector_dimension = embedding_model.output_shape[1]
+        self.image_vector_dimensions = image_vector_dimensions
 
+        emb_input_1 = layers.Input(self.embedding_vector_dimension)
+        emb_input_2 = layers.Input(self.embedding_vector_dimension)
+
+        """ Projection model is a model from embeddings to image vector """
         # projection model is the one to use for queries (put in a sequence after the embedding-generator model above)
         self.projection_model = tf.keras.models.Sequential([
             # layers.Dense(image_vector_dimensions, activation=ACTIVATION_FN, input_shape=(embedding_vector_dimension,))
-            layers.Dense(128, activation='relu', input_shape=(embedding_vector_dimension,)),
-            layers.Dense(image_vector_dimensions, activation=None),
+            layers.Dense(128, activation='relu', input_shape=(self.embedding_vector_dimension,)),
+            layers.Dense(self.image_vector_dimensions, activation=None),
             layers.Lambda(lambda x: tf.keras.backend.l2_normalize(x, axis=1)),
-        ])
+        ], name='siamese_projection')
 
         v1 = self.projection_model(emb_input_1)
         v2 = self.projection_model(emb_input_2)
         computed_distance = layers.Lambda(cosine_distance)([v1, v2])
         # computed_distance = layers.Lambda(euclidean_distance)([v1, v2])
 
-        super(SiameseModel, self).__init__(inputs=[emb_input_1, emb_input_2], outputs=computed_distance, name='siamese')
-
-    def get_projection_model(self):
-        """ Projection model is a model from embeddings to image vector """
-        return self.projection_model
-
-    def get_inference_model(self, embedding_model):
         """ Inference model is a model from image to image vector """
-        im_input = embedding_model.input
-        embedding = embedding_model(im_input)
+        im_input = self.embedding_model.input
+        embedding = self.embedding_model(im_input)
         image_vector = self.projection_model(embedding)
-        return Model(inputs=im_input, outputs=image_vector)
+        self.inference_model = Model(inputs=im_input, outputs=image_vector, name='siamese_inference')
 
-    def compile(self,
-                optimizer=tf.keras.optimizers.RMSprop(),
-                loss_margin=MARGIN,
-                **kwargs):
+        super(SiameseModel, self).__init__(
+            inputs=[emb_input_1, emb_input_2], outputs=computed_distance,
+            name=embedding_model.name + '_siamese_' + str(self.image_vector_dimensions)
+        )
+
+    def compile(self, optimizer=tf.keras.optimizers.RMSprop(), loss_margin=DEFAULT_MARGIN, **kwargs):
         super().compile(optimizer=optimizer, loss=tfa.losses.ContrastiveLoss(margin=loss_margin), **kwargs)
 
     def fit(self, x=None, y=None, epochs=NUM_EPOCHS, steps_per_epoch=STEPS_PER_EPOCH, num_classes=None, callbacks=[tensorboard_cb], **kwargs):
@@ -82,7 +82,7 @@ class SiameseModel(Model):
         return super().fit(x=x, y=y, epochs=epochs, steps_per_epoch=steps_per_epoch, callbacks=callbacks, **kwargs)
 
     @staticmethod
-    def prepare_dataset(embeddings, labels):
+    def prepare_dataset(emb_vectors, emb_labels):
         """
         We already have the embeddings precomputed in `embeddings` and their matching `labels`. To train the siamese networks, we need to generate random pairs of embeddings, assigning as target `1` if the two come from the same class and `0` otherwise.
 
@@ -93,32 +93,12 @@ class SiameseModel(Model):
 
         # zip together embeddings and their labels, cache in memory (maybe not necessary or maybe faster this way), shuffle, repeat forever.
         embeddings_ds = tf.data.Dataset.zip((
-            tf.data.Dataset.from_tensor_slices(embeddings),
-            tf.data.Dataset.from_tensor_slices(labels)
+            tf.data.Dataset.from_tensor_slices(emb_vectors),
+            tf.data.Dataset.from_tensor_slices(emb_labels)
         )).cache().shuffle(1000).repeat()
 
-        # TODO: change for triplet loss implementation
         # because of shuffling, we can take two adjacent tuples as a randomly matched pair
         train_ds = embeddings_ds.window(2, drop_remainder=True)
-        train_ds = train_ds.flat_map(lambda w1, w2: tf.data.Dataset.zip((w1.batch(2), w2.batch(2))))  # see https://stackoverflow.com/questions/55429307/how-to-use-windows-created-by-the-dataset-window-method-in-tensorflow-2-0
-        # generate the target label depending on whether the labels match or not
-        train_ds = train_ds.map(make_label_for_pair, num_parallel_calls=tf.data.AUTOTUNE, deterministic=False)
-        # resample to the desired distribution
-        # train_ds = train_ds.rejection_resample(lambda embs, target: tf.cast(target, tf.int32), [0.5, 0.5], initial_dist=[0.9, 0.1])
-        # train_ds = train_ds.map(lambda _, vals: vals) # discard the prepended "selected" class from the rejction resample, since we aleady have it available
-        train_ds = train_ds.batch(TRAIN_BATCH_SIZE)  # .prefetch(tf.data.AUTOTUNE)
-        return train_ds
-
-    @staticmethod
-    def prepare_tuples(embeddings, labels):
-        embeddings_ds = tf.data.Dataset.zip((
-            tf.data.Dataset.from_tensor_slices(embeddings),
-            tf.data.Dataset.from_tensor_slices(labels)
-        )).cache().shuffle(1000).repeat()
-
-        # TODO: change for triplet loss implementation
-        # because of shuffling, we can take two adjacent tuples as a randomly matched pair
-        train_ds = embeddings_ds.window(3, drop_remainder=True)
         train_ds = train_ds.flat_map(lambda w1, w2: tf.data.Dataset.zip((w1.batch(2), w2.batch(2))))  # see https://stackoverflow.com/questions/55429307/how-to-use-windows-created-by-the-dataset-window-method-in-tensorflow-2-0
         # generate the target label depending on whether the labels match or not
         train_ds = train_ds.map(make_label_for_pair, num_parallel_calls=tf.data.AUTOTUNE, deterministic=False)

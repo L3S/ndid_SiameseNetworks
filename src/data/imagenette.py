@@ -1,49 +1,41 @@
 import tensorflow as tf
+from src.data.base import BaseDataset, DEFAULT_BATCH_SIZE
 
-BATCH_SIZE = 32
-IMAGE_SIZE = (224, 224)
-
-NUM_CLASSES = 10
+DEFAULT_IMAGE_SIZE = (400, 320)
 CLASS_NAMES = ['fish', 'dog', 'player', 'saw', 'building', 'music', 'truck', 'gas', 'ball', 'parachute']
 
+class Imagenette(BaseDataset):
+    def __init__(self, image_size=DEFAULT_IMAGE_SIZE, batch_size=DEFAULT_BATCH_SIZE, map_fn=None):
+        super(Imagenette, self).__init__(name='imagenette', classes=CLASS_NAMES, image_size=image_size, batch_size=batch_size, map_fn=map_fn)
 
-def load_dataset(image_size=IMAGE_SIZE, batch_size=BATCH_SIZE, map_fn=None):
-    train_ds = tf.keras.utils.image_dataset_from_directory(
-        directory='../datasets/imagenette2/train/',
-        labels='inferred',
-        label_mode='int',
-        batch_size=batch_size,
-        image_size=image_size,
-        interpolation='nearest'
-    )
+    def _load_dataset(self, image_size, batch_size, map_fn):
+        train_ds = tf.keras.utils.image_dataset_from_directory(
+            directory='../datasets/imagenette2/train/',
+            labels='inferred',
+            label_mode='int',
+            batch_size=batch_size,
+            image_size=image_size,
+            interpolation='nearest'
+        )
 
-    test_ds = tf.keras.utils.image_dataset_from_directory(
-        directory='../datasets/imagenette2/val/',
-        labels='inferred',
-        label_mode='int',
-        batch_size=batch_size,
-        image_size=image_size,
-        shuffle=False,
-        interpolation='nearest'
-    )
+        test_ds = tf.keras.utils.image_dataset_from_directory(
+            directory='../datasets/imagenette2/val/',
+            labels='inferred',
+            label_mode='int',
+            batch_size=batch_size,
+            image_size=image_size,
+            shuffle=False,
+            interpolation='nearest'
+        )
 
-    if map_fn is not None:
-        train_ds = train_ds.map(map_fn).prefetch(tf.data.AUTOTUNE)
-        test_ds = test_ds.map(map_fn).prefetch(tf.data.AUTOTUNE)
+        if map_fn is not None:
+            train_ds = train_ds.map(map_fn).prefetch(tf.data.AUTOTUNE)
+            test_ds = test_ds.map(map_fn).prefetch(tf.data.AUTOTUNE)
 
-    return train_ds, test_ds
+        return train_ds, test_ds
 
-
-def load_dataset3(image_size=IMAGE_SIZE, batch_size=BATCH_SIZE, map_fn=None):
-    train_ds, test_ds = load_dataset(image_size=image_size, batch_size=batch_size, map_fn=map_fn)
-
-    test_ds_size = tf.data.experimental.cardinality(test_ds).numpy()
-    val_ds = test_ds.take(test_ds_size / 2)
-    test_ds = test_ds.skip(test_ds_size / 2)
-
-    if True:
-        print("Imagenette dataset loaded")
-        print("Training data size:", tf.data.experimental.cardinality(train_ds).numpy())
-        print("Validation data size:", tf.data.experimental.cardinality(val_ds).numpy())
-        print("Evaluation data size:", tf.data.experimental.cardinality(test_ds).numpy())
-    return train_ds, val_ds, test_ds
+    def _split_dataset(self, train_ds, test_ds):
+        test_ds_size = test_ds.cardinality().numpy()
+        val_ds = test_ds.take(test_ds_size / 2)
+        test_ds = test_ds.skip(test_ds_size / 2)
+        return train_ds, val_ds, test_ds

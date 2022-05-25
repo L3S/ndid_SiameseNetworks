@@ -1,12 +1,12 @@
 import sys
 sys.path.append("..")
 
+import csv
 from src.utils.hsv import *
 from src.utils.sift import *
-from src.utils.embeddings import *
-from src.data.cifar10 import *
+from src.data.cifar10 import Cifar10
 
-train_ds, test_ds = load_dataset()
+train_ds, test_ds = Cifar10()
 cifar10_vds = train_ds.concatenate(test_ds)
 
 
@@ -41,11 +41,6 @@ def export_sift(nfeatures=8):
             writer.writerow([i, label_str, value_str])
 
 
-def export_embeddings():
-    embeddings, embeddings_labels = load_embeddings(name='cifar10_alexnet_embeddings')
-    export_embeddings(embeddings, embeddings_labels, 'alexnet')
-
-
 # HSV
 # export_hsv(170, 171, 171) # 512
 # export_hsv(340, 342, 342) # 1024
@@ -59,5 +54,4 @@ def export_embeddings():
 # export_sift(32)
 
 # Siamese Embeddings
-export_embeddings()
-print('done')
+print('Done!')

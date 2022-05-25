@@ -21,7 +21,7 @@ def extract_hsv(image, bin0=256, bin1=256, bin2=256):
     return histh, hists, histv, hist_array.flatten()
 
 
-def plot_hsv(dataset):
+def plot_hsv(dataset, target_shape):
     plt.figure(figsize=(20, 20))
     for i, (image, label) in enumerate(dataset.take(3)):
         # from smaller image only smaller number of key points can be extracted

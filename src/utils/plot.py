@@ -1,4 +1,6 @@
+import numpy as np
 import matplotlib.pyplot as plt
+from scipy.spatial import distance_matrix
 from src.data.cifar10 import CLASS_NAMES
 
 
@@ -23,3 +25,29 @@ def plot_tuple(anchor, positive, negative):
     subplot_image(1, 3, 2, positive)
     subplot_image(1, 3, 3, negative)
     plt.show()
+
+
+def plot_vectors(vectors):
+    fig = plt.figure()
+    ax = fig.add_subplot(projection='3d')
+
+    _pts = np.random.uniform(size=[500, 3], low=-1, high=1)
+    _pts = _pts / np.linalg.norm(_pts, axis=-1)[:, None]
+    ax.scatter(_pts[:, 0], _pts[:, 1], _pts[:, 2])
+
+    ax.scatter(vectors[:, 0], vectors[:, 1], vectors[:, 2])
+    ax.set_xlim([-1, 1])
+    ax.set_ylim([-1, 1])
+    ax.set_zlim([-1, 1])
+    ax.invert_zaxis()
+
+    ax.set_xlabel('X Label')
+    ax.set_ylabel('Y Label')
+    ax.set_zlabel('Z Label')
+
+    plt.show()
+
+
+def calc_under_margin(vectors, margin=0.1):
+    dm = distance_matrix(vectors, vectors)
+    print('Under the margin', (dm < margin).sum() / 2)

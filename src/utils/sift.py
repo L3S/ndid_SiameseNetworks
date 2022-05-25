@@ -12,7 +12,7 @@ def extract_sift(image, nfeatures=None):
     return keypoints, features
 
 
-def plot_sift(dataset):
+def plot_sift(dataset, target_shape):
     plt.figure(figsize=(20, 20))
     for i, (image, label) in enumerate(dataset.take(3)):
         # from smaller image only smaller number of key points can be extracted

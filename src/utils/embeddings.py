@@ -7,7 +7,9 @@ from tqdm import tqdm
 from pathlib import Path
 from tensorboard.plugins import projector
 from google.protobuf import text_format
-from src.utils.common import get_datadir, get_logdir_root
+
+from src.utils.common import get_datadir, get_modeldir, get_logdir_root
+from src.data.base import BaseDataset
 
 
 def save_embeddings(values, labels, name='embeddings'):
@@ -94,3 +96,44 @@ def project_embeddings(image_vectors, labels, name='projection'):
     embedding.metadata_path = projection_name + '/metadata.tsv'
     embedding.tensor_path = projection_name + '/values.tsv'
     projector.visualize_embeddings(root_dir, config)
+
+
+def load_weights_of(model: tf.keras.Model, dataset: BaseDataset):
+    model_file = get_modeldir(model.name + '_' + dataset.name + '.h5')
+
+    if Path(model_file).exists():
+        model.load_weights(model_file)
+    else:
+        print('Model weights do not exist, training...')
+        model.fit(dataset.get_train(), validation_data=dataset.get_val())
+        model.save_weights(model_file)
+
+        print('Model trained, evaluating...')
+        model.evaluate(dataset.get_test())
+
+
+def get_embeddings_of(model: tf.keras.Model, dataset: BaseDataset):
+    embedding_file = get_datadir(model.name + '_' + dataset.name + '.pkl')
+
+    if Path(embedding_file).exists():
+        with open(embedding_file, 'rb') as infile:
+            emb_vectors, emb_labels = pickle.load(infile)
+        return emb_vectors, emb_labels
+    else:
+        print('calculating vectors...')
+        ds_vectors = []
+        ds_labels = []
+        for ds_batch in tqdm(dataset.get_combined()):
+            images, labels = ds_batch
+            predictions = model(images)
+            ds_vectors.extend(predictions.numpy().tolist())
+            ds_labels.extend(labels.numpy().tolist())
+
+        emb_vectors = np.array(ds_vectors)
+        emb_labels = np.array(ds_labels)
+
+        data = [emb_vectors, emb_labels]
+        with open(embedding_file, 'wb') as outfile:
+            pickle.dump(data, outfile, -1)
+
+        return emb_vectors, emb_labels

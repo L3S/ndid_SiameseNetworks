@@ -1,49 +1,41 @@
 import tensorflow as tf
+from src.data.base import BaseDataset, DEFAULT_BATCH_SIZE
 
-BATCH_SIZE = 32
-IMAGE_SIZE = (32, 32)
-
-NUM_CLASSES = 10
+DEFAULT_IMAGE_SIZE = (32, 32)
 CLASS_NAMES = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
 
+class Cifar10(BaseDataset):
+    def __init__(self, image_size=DEFAULT_IMAGE_SIZE, batch_size=DEFAULT_BATCH_SIZE, map_fn=None):
+        super(Cifar10, self).__init__(name='cifar10', classes=CLASS_NAMES, image_size=image_size, batch_size=batch_size, map_fn=map_fn)
 
-def load_dataset(image_size=IMAGE_SIZE, batch_size=BATCH_SIZE, map_fn=None):
-    train_ds = tf.keras.utils.image_dataset_from_directory(
-        directory='../datasets/cifar10/train/',
-        labels='inferred',
-        label_mode='int',
-        batch_size=batch_size,
-        image_size=image_size,
-        interpolation='nearest'
-    )
+    def _load_dataset(self, image_size, batch_size, map_fn):
+        train_ds = tf.keras.utils.image_dataset_from_directory(
+            directory='../datasets/cifar10/train/',
+            labels='inferred',
+            label_mode='int',
+            batch_size=batch_size,
+            image_size=image_size,
+            interpolation='nearest'
+        )
 
-    test_ds = tf.keras.utils.image_dataset_from_directory(
-        directory='../datasets/cifar10/test/',
-        labels='inferred',
-        label_mode='int',
-        batch_size=batch_size,
-        image_size=image_size,
-        shuffle=False,
-        interpolation='nearest'
-    )
+        test_ds = tf.keras.utils.image_dataset_from_directory(
+            directory='../datasets/cifar10/test/',
+            labels='inferred',
+            label_mode='int',
+            batch_size=batch_size,
+            image_size=image_size,
+            shuffle=False,
+            interpolation='nearest'
+        )
 
-    if map_fn is not None:
-        train_ds = train_ds.map(map_fn).prefetch(tf.data.AUTOTUNE)
-        test_ds = test_ds.map(map_fn).prefetch(tf.data.AUTOTUNE)
+        if map_fn is not None:
+            train_ds = train_ds.map(map_fn).prefetch(tf.data.AUTOTUNE)
+            test_ds = test_ds.map(map_fn).prefetch(tf.data.AUTOTUNE)
 
-    return train_ds, test_ds
+        return train_ds, test_ds
 
-
-def load_dataset3(image_size=IMAGE_SIZE, batch_size=BATCH_SIZE, map_fn=None):
-    train_ds, test_ds = load_dataset(image_size=image_size, batch_size=batch_size, map_fn=map_fn)
-
-    train_ds_size = tf.data.experimental.cardinality(train_ds).numpy()
-    train_ds = train_ds.skip(train_ds_size / 10)
-    val_ds = train_ds.take(train_ds_size / 10)
-
-    if True:
-        print("CIFAR10 dataset loaded")
-        print("Training data size:", tf.data.experimental.cardinality(train_ds).numpy())
-        print("Validation data size:", tf.data.experimental.cardinality(val_ds).numpy())
-        print("Evaluation data size:", tf.data.experimental.cardinality(test_ds).numpy())
-    return train_ds, val_ds, test_ds
+    def _split_dataset(self, train_ds, test_ds):
+        train_ds_size = train_ds.cardinality().numpy()
+        train_ds = train_ds.skip(train_ds_size / 10)
+        val_ds = train_ds.take(train_ds_size / 10)
+        return train_ds, val_ds, test_ds
