@@ -74,8 +74,12 @@ class SiameseModel(Model):
                 **kwargs):
         super().compile(optimizer=optimizer, loss=tfa.losses.ContrastiveLoss(margin=loss_margin), **kwargs)
 
-    def fit(self, x=None, y=None, batch_size=None, epochs=NUM_EPOCHS, steps_per_epoch=STEPS_PER_EPOCH, callbacks=[tensorboard_cb], **kwargs):
-        return super().fit(x=x, y=y, batch_size=batch_size, epochs=epochs, steps_per_epoch=steps_per_epoch, callbacks=callbacks, **kwargs)
+    def fit(self, x=None, y=None, epochs=NUM_EPOCHS, steps_per_epoch=STEPS_PER_EPOCH, num_classes=None, callbacks=[tensorboard_cb], **kwargs):
+
+        if num_classes is not None and 'class_weight' not in kwargs:
+            kwargs = dict(kwargs, class_weight={0: 1 / num_classes, 1: (num_classes - 1) / num_classes})
+
+        return super().fit(x=x, y=y, epochs=epochs, steps_per_epoch=steps_per_epoch, callbacks=callbacks, **kwargs)
 
     @staticmethod
     def prepare_dataset(embeddings, labels):
