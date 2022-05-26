@@ -1,6 +1,7 @@
 import tensorflow as tf
-from src.data.base import BaseDataset, DEFAULT_BATCH_SIZE
+from src.data.base import BaseDataset
 
+DEFAULT_BATCH_SIZE = 32
 DEFAULT_IMAGE_SIZE = (32, 32)
 CLASS_NAMES = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
 

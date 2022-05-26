@@ -5,7 +5,7 @@ PRINT_SIZE = True
 DEFAULT_BATCH_SIZE = 32
 
 class BaseDataset(ABC):
-    def __init__(self, name: str, classes: List[str], image_size: Tuple[int, int], batch_size: int = DEFAULT_BATCH_SIZE, map_fn: Callable = None):
+    def __init__(self, name: str, classes: List[str], image_size: Tuple[int, int], batch_size: int = None, map_fn: Callable = None):
         self.name = name
         self.classes = classes
         self.num_classes = len(classes)

@@ -12,21 +12,29 @@ from src.utils.common import get_datadir, get_modeldir, get_logdir_root
 from src.data.base import BaseDataset
 
 
-def save_embeddings(values, labels, name='embeddings'):
+def _save_vectors_path(values, labels, path):
     data = [values, labels]
 
-    with open(get_datadir(name + '.pkl'), 'wb') as outfile:
+    with open(path, 'wb') as outfile:
         pickle.dump(data, outfile, -1)
 
 
-def load_embeddings(name='embeddings'):
-    with open(get_datadir(name + '.pkl'), 'rb') as infile:
+def _load_vectors_path(path):
+    with open(path, 'rb') as infile:
         result = pickle.load(infile)
 
     return result[0], result[1]
 
 
-def export_embeddings(values, labels, name='embeddings'):
+def load_vectors(name='embeddings'):
+    return _load_vectors_path(get_datadir(name + '.pkl'))
+
+
+def save_vectors(values, labels, name='embeddings'):
+    return _save_vectors_path(values, labels, get_datadir(name + '.pkl'))
+
+
+def export_vectors(values, labels, name='embeddings'):
     header = ['Label', 'Embeddings']
     with open(get_datadir(name + '.csv'), 'w', encoding='UTF8', newline='') as f:
         writer = csv.writer(f, delimiter=";")
@@ -41,11 +49,22 @@ def export_embeddings(values, labels, name='embeddings'):
 def calc_vectors(ds, model):
     ds_vectors = []
     ds_labels = []
-    for ds_batch in tqdm(ds):
-        images, labels = ds_batch
+    for images, labels in tqdm(ds):
         predictions = model(images)
         ds_vectors.extend(predictions.numpy().tolist())
         ds_labels.extend(labels.numpy().tolist())
+
+    return np.array(ds_vectors), np.array(ds_labels)
+
+
+def calc_vectors_fn(ds, fn, *args):
+    ds_vectors = []
+    ds_labels = []
+    for image, label in tqdm(ds.as_numpy_iterator(), total=ds.cardinality().numpy()):
+        vector = fn(image, *args)
+        if vector is not None:
+            ds_vectors.append(vector)
+            ds_labels.append(label)
 
     return np.array(ds_vectors), np.array(ds_labels)
 
@@ -116,24 +135,9 @@ def get_embeddings_of(model: tf.keras.Model, dataset: BaseDataset):
     embedding_file = get_datadir(model.name + '_' + dataset.name + '.pkl')
 
     if Path(embedding_file).exists():
-        with open(embedding_file, 'rb') as infile:
-            emb_vectors, emb_labels = pickle.load(infile)
-        return emb_vectors, emb_labels
+        return _load_vectors_path(embedding_file)
     else:
         print('calculating vectors...')
-        ds_vectors = []
-        ds_labels = []
-        for ds_batch in tqdm(dataset.get_combined()):
-            images, labels = ds_batch
-            predictions = model(images)
-            ds_vectors.extend(predictions.numpy().tolist())
-            ds_labels.extend(labels.numpy().tolist())
-
-        emb_vectors = np.array(ds_vectors)
-        emb_labels = np.array(ds_labels)
-
-        data = [emb_vectors, emb_labels]
-        with open(embedding_file, 'wb') as outfile:
-            pickle.dump(data, outfile, -1)
-
+        emb_vectors, emb_labels = calc_vectors(dataset.get_combined(), model)
+        _save_vectors_path(emb_vectors, emb_labels, embedding_file)
         return emb_vectors, emb_labels

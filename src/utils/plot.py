@@ -1,3 +1,4 @@
+import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.spatial import distance_matrix
@@ -45,6 +46,32 @@ def plot_vectors(vectors):
     ax.set_ylabel('Y Label')
     ax.set_zlabel('Z Label')
 
+    plt.show()
+
+
+def plot_hsv(hist_h, hist_s, hist_v):
+    plt.figure()
+    ax = plt.subplot()
+    ax.set_title("HSV Histogram")
+    ax.plot(hist_h, label='H')
+    ax.plot(hist_s, label='S')
+    ax.plot(hist_v, label='V')
+    plt.xlabel("Bins")
+    plt.ylabel("Percentage of Pixels")
+    plt.legend()
+    # ax.axis('off')
+    plt.show()
+
+
+def plot_sift(image, keypoints):
+    plt.figure(figsize=(20, 20))
+    # from smaller image only smaller number of key points can be extracted
+    subplot_image(1, 2, 1, image, "Original image")
+
+    img_kp = image.copy()
+    cv2.drawKeypoints(img_kp, keypoints, img_kp, color=(255, 0, 0))
+
+    subplot_image(1, 2, 2, img_kp, "Keypoints")
     plt.show()
 
 
