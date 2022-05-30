@@ -9,7 +9,7 @@ from tensorboard.plugins import projector
 from google.protobuf import text_format
 
 from src.utils.common import get_datadir, get_modeldir, get_logdir_root
-from src.data.base import BaseDataset
+from src.data import AsbDataset
 
 
 def _save_vectors_path(values, labels, path):
@@ -117,7 +117,7 @@ def project_embeddings(image_vectors, labels, name='projection'):
     projector.visualize_embeddings(root_dir, config)
 
 
-def load_weights_of(model: tf.keras.Model, dataset: BaseDataset):
+def load_weights_of(model: tf.keras.Model, dataset: AsbDataset):
     model_file = get_modeldir(model.name + '_' + dataset.name + '.h5')
 
     if Path(model_file).exists():
@@ -131,7 +131,7 @@ def load_weights_of(model: tf.keras.Model, dataset: BaseDataset):
         model.evaluate(dataset.get_test())
 
 
-def get_embeddings_of(model: tf.keras.Model, dataset: BaseDataset):
+def get_embeddings_of(model: tf.keras.Model, dataset: AsbDataset):
     embedding_file = get_datadir(model.name + '_' + dataset.name + '.pkl')
 
     if Path(embedding_file).exists():
