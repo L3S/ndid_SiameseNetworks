@@ -26,7 +26,6 @@ class Imagenette(AsbDataset):
             label_mode='int',
             batch_size=batch_size,
             image_size=image_size,
-            shuffle=False,
             interpolation='nearest'
         )
 

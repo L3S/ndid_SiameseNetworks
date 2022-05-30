@@ -1,6 +1,7 @@
 import csv
 import time
-import _pickle as pickle
+import bz2
+import pickle
 import numpy as np
 import tensorflow as tf
 from tqdm import tqdm
@@ -15,12 +16,12 @@ from src.data import AsbDataset
 def _save_vectors_path(values, labels, path):
     data = [values, labels]
 
-    with open(path, 'wb') as outfile:
-        pickle.dump(data, outfile, -1)
+    with bz2.BZ2File(path, 'wb') as f:
+        pickle.dump(data, f, -1)
 
 
 def _load_vectors_path(path):
-    with open(path, 'rb') as infile:
+    with bz2.BZ2File(path, 'rb') as infile:
         result = pickle.load(infile)
 
     return result[0], result[1]
@@ -54,7 +55,7 @@ def calc_vectors(ds, model):
         ds_vectors.extend(predictions.numpy().tolist())
         ds_labels.extend(labels.numpy().tolist())
 
-    return np.array(ds_vectors), np.array(ds_labels)
+    return np.array(ds_vectors, dtype='float32'), np.array(ds_labels, dtype='uint8')
 
 
 def calc_vectors_fn(ds, fn, *args):
@@ -66,7 +67,7 @@ def calc_vectors_fn(ds, fn, *args):
             ds_vectors.append(vector)
             ds_labels.append(label)
 
-    return np.array(ds_vectors), np.array(ds_labels)
+    return np.array(ds_vectors, dtype='float32'), np.array(ds_labels, dtype='uint8')
 
 
 def evaluate_vectors(values, labels):
@@ -132,7 +133,7 @@ def load_weights_of(model: tf.keras.Model, dataset: AsbDataset):
 
 
 def get_embeddings_of(model: tf.keras.Model, dataset: AsbDataset):
-    embedding_file = get_datadir(model.name + '_' + dataset.name + '.pkl')
+    embedding_file = get_datadir(model.name + '_' + dataset.name + '.pbz2')
 
     if Path(embedding_file).exists():
         return _load_vectors_path(embedding_file)

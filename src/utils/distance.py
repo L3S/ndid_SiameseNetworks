@@ -31,7 +31,6 @@ def cosine_distance(vects):
         (as floating point value) between vectors.
     """
     # NOTE: Cosine_distance = 1 - cosine_similarity
-    # Cosine distance is defined betwen [0,2] where 0 is vectors with the same direction and verse,
+    # Cosine distance is defined between [0,2] where 0 is vectors with the same direction and verse,
     # 1 is perpendicular vectors and 2 is opposite vectors
-    cosine_similarity = layers.Dot(axes=1, normalize=True)(vects)
-    return 1 - cosine_similarity
+    return 1 - layers.Dot(axes=1, normalize=True)(vects)

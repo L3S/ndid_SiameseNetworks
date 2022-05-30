@@ -15,25 +15,14 @@ TRAIN_BATCH_SIZE = 128
 STEPS_PER_EPOCH = 100  # TODO: try restore 1000
 
 
-@tf.function
-def make_label_for_pair(embeddings, labels):
-    # embedding_1, label_1 = tuple_1
-    # embedding_2, label_2 = tuple_2
-    return (embeddings[0, :], embeddings[1, :]), tf.cast(labels[0] == labels[1], tf.float32)
-
-
 class SiameseModel(Model):
     """ Filippo's Siamese model
 
-    The `projection_model` is the part of the network that generates the final image vector (currently, a simple Dense layer with tanh activation, but it can be as complex as needed).
-
-    The `siamese` model is the one we train. It applies the projection model to two embeddings, calculates the euclidean distance between the two generated image vectors and calculates the contrastive loss.
-
-    As a note, [here](https://towardsdatascience.com/contrastive-loss-explaned-159f2d4a87ec) they mention that cosine distance is preferable to euclidean distance:
-
-    > in a large dimensional space, all points tend to be far apart by the euclidian measure. In higher dimensions, the angle between vectors is a more effective measure.
-
-    Note that, when using cosine distance, the margin needs to be reduced from its default value of 1 (see below).
+    The `embedding_model` is a model used to extract embeddings, also used to create `inference_model`.
+    The `projection_model` is the part of the network that generates the final image vector, uses embeddings as input.
+    The `inference_model` is combined model, uses `embedding_model`'s input and `projection_model`'s output.
+    The `siamese` model is the one we train. It applies the projection model to two embeddings,
+    calculates the euclidean distance between the two generated image vectors and calculates the contrastive loss.
     """
 
     def __init__(self, embedding_model, image_vector_dimensions=IMAGE_VECTOR_DIMENSIONS):
@@ -46,7 +35,6 @@ class SiameseModel(Model):
         emb_input_1 = layers.Input(self.embedding_vector_dimension)
         emb_input_2 = layers.Input(self.embedding_vector_dimension)
 
-        """ Projection model is a model from embeddings to image vector """
         # projection model is the one to use for queries (put in a sequence after the embedding-generator model above)
         self.projection_model = tf.keras.models.Sequential([
             # layers.Dense(image_vector_dimensions, activation=ACTIVATION_FN, input_shape=(embedding_vector_dimension,))
@@ -57,6 +45,11 @@ class SiameseModel(Model):
 
         v1 = self.projection_model(emb_input_1)
         v2 = self.projection_model(emb_input_2)
+
+        # As a note, [here](https://towardsdatascience.com/contrastive-loss-explaned-159f2d4a87ec) they mention that
+        # cosine distance is preferable to euclidean distance: in a large dimensional space, all points tend to be far
+        # apart by the euclidian measure. In higher dimensions, the angle between vectors is a more effective measure.
+        # Note that, when using cosine distance, the margin needs to be reduced from its default value of 1 (see below)
         computed_distance = layers.Lambda(cosine_distance)([v1, v2])
         # computed_distance = layers.Lambda(euclidean_distance)([v1, v2])
 
@@ -84,26 +77,26 @@ class SiameseModel(Model):
     @staticmethod
     def prepare_dataset(emb_vectors, emb_labels):
         """
-        We already have the embeddings precomputed in `embeddings` and their matching `labels`. To train the siamese networks, we need to generate random pairs of embeddings, assigning as target `1` if the two come from the same class and `0` otherwise.
-
-        In order to keep the training balanced, we can't simply select two random `(embedding, label)` tuples from the dataset, because this is heavily unbalanced towards the negative class. To keep thing simple, we'll randomly select two samples and then use `rejection_resample` to rebalance the classes.
-
-        **NOTE**: rejection resampling works only if the number of classes is reasonably low: with 10 classes there's a 90% probability that a sample will be rejected, it can get very inefficient very quickly if the number of classes is too great.
+        To train the siamese networks, we need to generate random pairs of embeddings,
+        assigning as target `1` if the two come from the same class and `0` otherwise.
         """
 
-        # zip together embeddings and their labels, cache in memory (maybe not necessary or maybe faster this way), shuffle, repeat forever.
+        # zip together embeddings and labels, cache in memory (maybe not necessary), shuffle, repeat forever
         embeddings_ds = tf.data.Dataset.zip((
             tf.data.Dataset.from_tensor_slices(emb_vectors),
             tf.data.Dataset.from_tensor_slices(emb_labels)
         )).cache().shuffle(1000).repeat()
 
+        @tf.function
+        def make_label_for_pair(embeddings, labels):
+            return (embeddings[0, :], embeddings[1, :]), tf.cast(labels[0] == labels[1], tf.uint8)
+
         # because of shuffling, we can take two adjacent tuples as a randomly matched pair
-        train_ds = embeddings_ds.window(2, drop_remainder=True)
-        train_ds = train_ds.flat_map(lambda w1, w2: tf.data.Dataset.zip((w1.batch(2), w2.batch(2))))  # see https://stackoverflow.com/questions/55429307/how-to-use-windows-created-by-the-dataset-window-method-in-tensorflow-2-0
+        # each "window" is a dataset that contains a subset of elements of the input dataset
+        windows_ds = embeddings_ds.window(2, drop_remainder=True)
+        # https://stackoverflow.com/questions/55429307/how-to-use-windows-created-by-the-dataset-window-method-in-tensorflow-2-0
+        flat_ds = windows_ds.flat_map(lambda w1, w2: tf.data.Dataset.zip((w1.batch(2), w2.batch(2))))
         # generate the target label depending on whether the labels match or not
-        train_ds = train_ds.map(make_label_for_pair, num_parallel_calls=tf.data.AUTOTUNE, deterministic=False)
-        # resample to the desired distribution
-        # train_ds = train_ds.rejection_resample(lambda embs, target: tf.cast(target, tf.int32), [0.5, 0.5], initial_dist=[0.9, 0.1])
-        # train_ds = train_ds.map(lambda _, vals: vals) # discard the prepended "selected" class from the rejction resample, since we aleady have it available
-        train_ds = train_ds.batch(TRAIN_BATCH_SIZE)  # .prefetch(tf.data.AUTOTUNE)
+        map_ds = flat_ds.map(make_label_for_pair, num_parallel_calls=tf.data.AUTOTUNE, deterministic=False)
+        train_ds = map_ds.batch(TRAIN_BATCH_SIZE)  # .prefetch(tf.data.AUTOTUNE)
         return train_ds
