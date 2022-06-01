@@ -12,7 +12,7 @@ DEFAULT_MARGIN = 0.5
 
 NUM_EPOCHS = 3
 TRAIN_BATCH_SIZE = 128
-STEPS_PER_EPOCH = 100  # TODO: try restore 1000
+STEPS_PER_EPOCH = 100
 
 
 class SiameseModel(Model):
@@ -25,26 +25,21 @@ class SiameseModel(Model):
     calculates the euclidean distance between the two generated image vectors and calculates the contrastive loss.
     """
 
-    def __init__(self, embedding_model, image_vector_dimensions=IMAGE_VECTOR_DIMENSIONS):
-        super().__init__()
-
-        self.embedding_model = embedding_model
-        self.embedding_vector_dimension = embedding_model.output_shape[1]
-        self.image_vector_dimensions = image_vector_dimensions
-
-        emb_input_1 = layers.Input(self.embedding_vector_dimension)
-        emb_input_2 = layers.Input(self.embedding_vector_dimension)
+    def __init__(self, embedding_model, image_vector_dimensions=IMAGE_VECTOR_DIMENSIONS, loss_margin=DEFAULT_MARGIN, fit_epochs=NUM_EPOCHS):
+        embedding_vector_dimension = embedding_model.output_shape[1]
+        emb_input_1 = layers.Input(embedding_vector_dimension)
+        emb_input_2 = layers.Input(embedding_vector_dimension)
 
         # projection model is the one to use for queries (put in a sequence after the embedding-generator model above)
-        self.projection_model = tf.keras.models.Sequential([
+        projection_model = tf.keras.models.Sequential([
             # layers.Dense(image_vector_dimensions, activation=ACTIVATION_FN, input_shape=(embedding_vector_dimension,))
-            layers.Dense(128, activation='relu', input_shape=(self.embedding_vector_dimension,)),
-            layers.Dense(self.image_vector_dimensions, activation=None),
+            layers.Dense(128, activation='relu', input_shape=(embedding_vector_dimension,)),
+            layers.Dense(image_vector_dimensions, activation=None),
             layers.Lambda(lambda x: tf.keras.backend.l2_normalize(x, axis=1)),
         ], name='siamese_projection')
 
-        v1 = self.projection_model(emb_input_1)
-        v2 = self.projection_model(emb_input_2)
+        v1 = projection_model(emb_input_1)
+        v2 = projection_model(emb_input_2)
 
         # As a note, [here](https://towardsdatascience.com/contrastive-loss-explaned-159f2d4a87ec) they mention that
         # cosine distance is preferable to euclidean distance: in a large dimensional space, all points tend to be far
@@ -54,20 +49,32 @@ class SiameseModel(Model):
         # computed_distance = layers.Lambda(euclidean_distance)([v1, v2])
 
         """ Inference model is a model from image to image vector """
-        im_input = self.embedding_model.input
-        embedding = self.embedding_model(im_input)
-        image_vector = self.projection_model(embedding)
-        self.inference_model = Model(inputs=im_input, outputs=image_vector, name='siamese_inference')
+        im_input = embedding_model.input
+        embedding = embedding_model(im_input)
+        image_vector = projection_model(embedding)
+        inference_model = Model(inputs=im_input, outputs=image_vector, name='siamese_inference')
 
         super(SiameseModel, self).__init__(
             inputs=[emb_input_1, emb_input_2], outputs=computed_distance,
-            name=embedding_model.name + '_siamese_' + str(self.image_vector_dimensions)
+            name=embedding_model.name + '_siamese_d' + str(image_vector_dimensions) + '_m' + str(loss_margin) + '_s' + str(fit_epochs * STEPS_PER_EPOCH)
         )
 
-    def compile(self, optimizer=tf.keras.optimizers.RMSprop(), loss_margin=DEFAULT_MARGIN, **kwargs):
+        self.loss_margin = loss_margin
+        self.fit_epochs = fit_epochs
+        self.projection_model = projection_model
+        self.inference_model = inference_model
+
+    def compile(self, optimizer=tf.keras.optimizers.RMSprop(), loss_margin=None, **kwargs):
+
+        if loss_margin is None:
+            loss_margin = self.loss_margin
+
         super().compile(optimizer=optimizer, loss=tfa.losses.ContrastiveLoss(margin=loss_margin), **kwargs)
 
-    def fit(self, x=None, y=None, epochs=NUM_EPOCHS, steps_per_epoch=STEPS_PER_EPOCH, num_classes=None, callbacks=[tensorboard_cb], **kwargs):
+    def fit(self, x=None, y=None, epochs=None, steps_per_epoch=STEPS_PER_EPOCH, num_classes=None, callbacks=[tensorboard_cb], **kwargs):
+
+        if epochs is None:
+            epochs = self.fit_epochs
 
         if num_classes is not None and 'class_weight' not in kwargs:
             kwargs = dict(kwargs, class_weight={0: 1 / num_classes, 1: (num_classes - 1) / num_classes})

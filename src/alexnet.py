@@ -16,15 +16,15 @@ model = AlexNetModel()
 model.compile()
 load_weights_of(model, dataset)
 
-emb_vectors, emb_labels = get_embeddings_of(model.get_embedding_model(), dataset)
+emb_model = model.get_embedding_model()
+emb_vectors, emb_labels = get_embeddings_of(emb_model, dataset)
 emb_ds = SiameseModel.prepare_dataset(emb_vectors, emb_labels)
 
-MARGIN = 0.5
-siamese = SiameseModel(embedding_model=model.get_embedding_model(), image_vector_dimensions=512)
-siamese.compile(loss_margin=MARGIN)
+siamese = SiameseModel(emb_model, image_vector_dimensions=512, loss_margin=1, fit_epochs=5)
+siamese.compile()
 siamese.fit(emb_ds, num_classes=dataset.num_classes)
 
 projection_vectors = siamese.projection_model.predict(emb_vectors)
-# save_vectors(projection_vectors, emb_labels, dataset.name + '_' + siamese.name + '_vectors')
-project_embeddings(projection_vectors, emb_labels, str(MARGIN) + '_' + siamese.name + '_' + dataset.name)
+save_vectors(projection_vectors, emb_labels, dataset.name + '_' + siamese.name + '_vectors')
+project_embeddings(projection_vectors, emb_labels, siamese.name + '_' + dataset.name)
 print('Done!')
