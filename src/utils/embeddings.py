@@ -17,7 +17,7 @@ def _save_vectors_path(values, labels, path):
     data = [values, labels]
 
     with bz2.BZ2File(path, 'wb') as f:
-        pickle.dump(data, f, -1)
+        pickle.dump(data, f, 4)
 
 
 def _load_vectors_path(path):
@@ -28,11 +28,11 @@ def _load_vectors_path(path):
 
 
 def load_vectors(name='embeddings'):
-    return _load_vectors_path(get_datadir(name + '.pkl'))
+    return _load_vectors_path(get_datadir(name + '.pbz2'))
 
 
 def save_vectors(values, labels, name='embeddings'):
-    return _save_vectors_path(values, labels, get_datadir(name + '.pkl'))
+    return _save_vectors_path(values, labels, get_datadir(name + '.pbz2'))
 
 
 def export_vectors(values, labels, name='embeddings'):
