@@ -20,11 +20,16 @@ emb_model = model.get_embedding_model()
 emb_vectors, emb_labels = get_embeddings_of(emb_model, dataset)
 emb_ds = SiameseModel.prepare_dataset(emb_vectors, emb_labels)
 
-siamese = SiameseModel(emb_model, image_vector_dimensions=512, loss_margin=1, fit_epochs=5)
-siamese.compile()
-siamese.fit(emb_ds, num_classes=dataset.num_classes)
+for x in [2, 1.5, 1, 0.75, 0.5, 0.1]:
+    print("Calculating for margin", x)
+    for y in [1, 3, 5, 10, 30, 50]:
+        print("Calculating for epochs", y)
+        siamese = SiameseModel(emb_model, image_vector_dimensions=512, loss_margin=x, fit_epochs=y)
+        siamese.compile()
+        siamese.fit(emb_ds, num_classes=dataset.num_classes)
 
-projection_vectors = siamese.projection_model.predict(emb_vectors)
-save_vectors(projection_vectors, emb_labels, dataset.name + '_' + siamese.name + '_vectors')
-project_embeddings(projection_vectors, emb_labels, siamese.name + '_' + dataset.name)
+        projection_vectors = siamese.projection_model.predict(emb_vectors)
+        save_vectors(projection_vectors, emb_labels, dataset.name + '_' + siamese.name + '_vectors')
+        project_embeddings(projection_vectors, emb_labels, siamese.name + '_' + dataset.name)
+
 print('Done!')

@@ -35,7 +35,7 @@ class SiameseModel(Model):
             # layers.Dense(image_vector_dimensions, activation=ACTIVATION_FN, input_shape=(embedding_vector_dimension,))
             layers.Dense(128, activation='relu', input_shape=(embedding_vector_dimension,)),
             layers.Dense(image_vector_dimensions, activation=None),
-            layers.Lambda(lambda x: tf.keras.backend.l2_normalize(x, axis=1)),
+            layers.Lambda(lambda x: tf.keras.backend.l2_normalize(x, axis=1)),  # TODO: remove normalization when play with distance formula
         ], name='siamese_projection')
 
         v1 = projection_model(emb_input_1)
