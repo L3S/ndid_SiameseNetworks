@@ -16,9 +16,6 @@ class VitModel(Sequential):
         ], name='vit')
         self.build((None,) + TARGET_SHAPE + (3,))
 
-    def compile(self, metrics=['accuracy'], **kwargs):
-        super().compile(metrics=metrics, **kwargs)
-
     def fit(self, x=None, y=None, callbacks=[tensorboard_cb], **kwargs):
         return super().fit(x=x, y=y, callbacks=callbacks, **kwargs)
 

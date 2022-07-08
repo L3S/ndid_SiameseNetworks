@@ -14,6 +14,7 @@ class MobileNetModel(Model):
     def __init__(self):
         core = tf.keras.applications.MobileNet(
             include_top=False,
+            input_shape=TARGET_SHAPE + (3,)
         )
 
         x = core.output
@@ -45,5 +46,6 @@ class MobileNetModel(Model):
     @staticmethod
     def preprocess_input(image, label):
         image = tf.cast(image, tf.float32)
+        image = tf.image.resize(image, TARGET_SHAPE, method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
         image = tf.keras.applications.mobilenet.preprocess_input(image)
         return image, label
