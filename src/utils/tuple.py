@@ -30,27 +30,22 @@ def shuffle_arrays(arrays, set_seed=-1):
         rstate.shuffle(arr)
 
 
-def produce_tuples():
-    (train_images, train_labels), (test_images, test_labels) = tf.keras.datasets.cifar10.load_data()
-
-    total_labels = 10
-    images_per_label = 6000
+def produce_tuples(images, labels):
+    unique_labels = np.unique(labels, return_counts=True)
+    total_labels = len(unique_labels[0])
+    images_per_label = np.max(unique_labels[1])
     tuples_per_label = int(images_per_label / 3)
     total_tuples = int(tuples_per_label * total_labels)
 
+    image_shape = images.shape[1]
+
     # re arrange whole dataset by labels
     labels_stat = np.zeros((total_labels), dtype='uint16')
-    labels_train = np.empty((total_labels, images_per_label, 32, 32, 3), dtype='uint8')
+    labels_train = np.empty((total_labels, images_per_label, image_shape), dtype='uint8')
 
-    for i in range(len(train_images)):
-        tr_leb = train_labels[i]
-        tr_img = train_images[i]
-        labels_train[tr_leb, labels_stat[tr_leb]] = tr_img
-        labels_stat[tr_leb] += 1
-
-    for i in range(len(test_images)):
-        tr_leb = test_labels[i]
-        tr_img = test_images[i]
+    for i in range(len(images)):
+        tr_leb = labels[i]
+        tr_img = images[i]
         labels_train[tr_leb, labels_stat[tr_leb]] = tr_img
         labels_stat[tr_leb] += 1
 
@@ -59,7 +54,7 @@ def produce_tuples():
         np.random.shuffle(labels_train[i])
 
     # create tuples
-    anchor_images = np.empty((total_tuples, 32, 32, 3), dtype='uint8')
+    anchor_images = np.empty((total_tuples, image_shape), dtype='uint8')
     anchor_labels = np.empty((total_tuples), dtype='uint8')
 
     for i in range(total_labels):
@@ -67,7 +62,7 @@ def produce_tuples():
             anchor_labels[i * tuples_per_label + j] = i
             anchor_images[i * tuples_per_label + j] = labels_train[i, j]
 
-    positive_images = np.empty((total_tuples, 32, 32, 3), dtype='uint8')
+    positive_images = np.empty((total_tuples, image_shape), dtype='uint8')
     positive_labels = np.empty((total_tuples), dtype='uint8')
 
     for i in range(total_labels):
@@ -75,7 +70,7 @@ def produce_tuples():
             positive_labels[i * tuples_per_label + j] = i
             positive_images[i * tuples_per_label + j] = labels_train[i, tuples_per_label + j]
 
-    negative_images = np.empty((total_tuples, 32, 32, 3), dtype='uint8')
+    negative_images = np.empty((total_tuples, image_shape), dtype='uint8')
     negative_labels = np.empty((total_tuples), dtype='uint8')
 
     for i in range(total_labels):
@@ -87,7 +82,7 @@ def produce_tuples():
     shuffle_arrays([negative_labels, negative_images])
 
     for i in range(total_labels):
-        k = ((i + 1) * tuples_per_label, 0)[i == 9]
+        k = ((i + 1) * tuples_per_label, 0)[i == total_labels - 1]
         for j in range(tuples_per_label):
             c = i * tuples_per_label + j
             tmp_label = negative_labels[c]
@@ -126,7 +121,8 @@ def load_tuples():
 
 
 def prepare_dataset():
-    (anchor_images, anchor_labels), (positive_images, positive_labels), (negative_images, negative_labels) = produce_tuples()
+    (train_images, train_labels), (test_images, test_labels) = tf.keras.datasets.cifar10.load_data()
+    (anchor_images, anchor_labels), (positive_images, positive_labels), (negative_images, negative_labels) = produce_tuples(train_images + test_images, train_labels + test_labels)
 
     anchor_ds = tf.data.Dataset.from_tensor_slices(anchor_images)
     positive_ds = tf.data.Dataset.from_tensor_slices(positive_images)

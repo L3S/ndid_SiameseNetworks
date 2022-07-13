@@ -1,4 +1,5 @@
 import tensorflow as tf
+from src.utils.common import get_dataset
 from src.data import AsbDataset
 
 DEFAULT_BATCH_SIZE = 6
@@ -12,7 +13,7 @@ class Simple3(AsbDataset):
 
     def _load_dataset(self, image_size, batch_size, map_fn):
         ds = tf.keras.utils.image_dataset_from_directory(
-            directory='../datasets/simple3/',
+            directory=get_dataset('simple3'),
             labels='inferred',
             label_mode='int',
             batch_size=batch_size,

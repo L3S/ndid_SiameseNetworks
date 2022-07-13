@@ -5,7 +5,6 @@ import pickle
 import numpy as np
 import tensorflow as tf
 from tqdm import tqdm
-from pathlib import Path
 from tensorboard.plugins import projector
 from google.protobuf import text_format
 
@@ -86,7 +85,7 @@ def evaluate_vectors(values, labels):
 
 
 def project_embeddings(image_vectors, labels, name='projection'):
-    root_dir = Path(get_logdir_root())
+    root_dir = get_logdir_root()
     projection_name = name + '_' + str(time.strftime('%Y_%m_%d-%H_%M_%S'))
     projection_dir = root_dir.joinpath(projection_name)
     projection_dir.mkdir(parents=True, exist_ok=True)
@@ -121,7 +120,7 @@ def project_embeddings(image_vectors, labels, name='projection'):
 def load_weights_of(model: tf.keras.Model, dataset: AsbDataset):
     model_file = get_modeldir(model.name + '_' + dataset.name + '.h5')
 
-    if Path(model_file).exists():
+    if model_file.exists():
         model.load_weights(model_file)
     else:
         print('Model weights do not exist, training...')
@@ -135,7 +134,7 @@ def load_weights_of(model: tf.keras.Model, dataset: AsbDataset):
 def get_embeddings_of(model: tf.keras.Model, dataset: AsbDataset):
     embedding_file = get_datadir(model.name + '_' + dataset.name + '.pbz2')
 
-    if Path(embedding_file).exists():
+    if embedding_file.exists():
         return _load_vectors_path(embedding_file)
     else:
         print('calculating vectors...')

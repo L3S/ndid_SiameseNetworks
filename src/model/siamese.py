@@ -3,7 +3,7 @@ import tensorflow_addons as tfa
 from src.utils.distance import cosine_distance, euclidean_distance
 from tensorflow.keras import layers, callbacks, Model
 
-tensorboard_cb = callbacks.TensorBoard(get_logdir('siamese/fit'))
+tensorboard_cb = callbacks.TensorBoard(get_logdir('siamese/fit'), histogram_freq=1)
 
 EMBEDDING_VECTOR_DIMENSION = 4096
 IMAGE_VECTOR_DIMENSIONS = 3  # use for test visualization on tensorboard
@@ -65,12 +65,12 @@ class SiameseModel(Model):
         self.projection_model = projection_model
         self.inference_model = inference_model
 
-    def compile(self, optimizer=tf.keras.optimizers.RMSprop(), loss_margin=None, **kwargs):
+    def compile(self, optimizer=tf.keras.optimizers.RMSprop(), loss_margin=None, loss=tfa.losses.ContrastiveLoss, **kwargs):
 
         if loss_margin is None:
             loss_margin = self.loss_margin
 
-        super().compile(optimizer=optimizer, loss=tfa.losses.ContrastiveLoss(margin=loss_margin), **kwargs)
+        super().compile(optimizer=optimizer, loss=loss(margin=loss_margin), **kwargs)
 
     def fit(self, x=None, y=None, epochs=None, steps_per_epoch=STEPS_PER_EPOCH, num_classes=None, callbacks=[tensorboard_cb], **kwargs):
 
@@ -83,7 +83,7 @@ class SiameseModel(Model):
         return super().fit(x=x, y=y, epochs=epochs, steps_per_epoch=steps_per_epoch, callbacks=callbacks, **kwargs)
 
     @staticmethod
-    def prepare_dataset(emb_vectors, emb_labels):
+    def prepare_dataset(emb_vectors, emb_labels, batch_size=TRAIN_BATCH_SIZE):
         """
         To train the siamese networks, we need to generate random pairs of embeddings,
         assigning as target `1` if the two come from the same class and `0` otherwise.
@@ -106,5 +106,5 @@ class SiameseModel(Model):
         flat_ds = windows_ds.flat_map(lambda w1, w2: tf.data.Dataset.zip((w1.batch(2), w2.batch(2))))
         # generate the target label depending on whether the labels match or not
         map_ds = flat_ds.map(make_label_for_pair, num_parallel_calls=tf.data.AUTOTUNE, deterministic=False)
-        train_ds = map_ds.batch(TRAIN_BATCH_SIZE)  # .prefetch(tf.data.AUTOTUNE)
+        train_ds = map_ds.batch(batch_size)  # .prefetch(tf.data.AUTOTUNE)
         return train_ds

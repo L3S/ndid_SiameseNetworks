@@ -1,4 +1,5 @@
 import tensorflow as tf
+from src.utils.common import get_dataset
 from src.data import AsbDataset
 
 DEFAULT_BATCH_SIZE = 32
@@ -12,7 +13,7 @@ class Imagenette(AsbDataset):
 
     def _load_dataset(self, image_size, batch_size, map_fn):
         train_ds = tf.keras.utils.image_dataset_from_directory(
-            directory='../datasets/imagenette2/train/',
+            directory=get_dataset('imagenette2/train'),
             labels='inferred',
             label_mode='int',
             batch_size=batch_size,
@@ -21,7 +22,7 @@ class Imagenette(AsbDataset):
         )
 
         test_ds = tf.keras.utils.image_dataset_from_directory(
-            directory='../datasets/imagenette2/val/',
+            directory=get_dataset('imagenette2/val'),
             labels='inferred',
             label_mode='int',
             batch_size=batch_size,
