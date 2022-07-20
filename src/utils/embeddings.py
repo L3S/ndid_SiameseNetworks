@@ -8,7 +8,7 @@ from tqdm import tqdm
 from tensorboard.plugins import projector
 from google.protobuf import text_format
 
-from src.utils.common import get_datadir, get_modeldir, get_logdir_root
+from src.utils.common import get_datadir, get_modeldir, get_logdir_root, get_vectorsdir
 from src.data import AsbDataset
 
 
@@ -31,7 +31,7 @@ def load_vectors(name='embeddings'):
 
 
 def save_vectors(values, labels, name='embeddings'):
-    return _save_vectors_path(values, labels, get_datadir(name + '.pbz2'))
+    return _save_vectors_path(values, labels, get_vectorsdir(name + '.pbz2'))
 
 
 def export_vectors(values, labels, name='embeddings'):
