@@ -10,7 +10,7 @@ source /opt/anaconda3/etc/profile.d/conda.sh
 conda activate tf
 
 cd src
-for net in "alexnet" "vgg16" "mobilenet" "efficientnet" "vit"; do
+for net in "alexnet" "vgg16" "mobilenet" "efficientnet" "vit" "resnet"; do
   for dataset in "cifar10" "imagenette"; do
     for loss in "contrastive" "offline-triplet" "semi-hard-triplet" "hard-triplet"; do
       for margin in "0.5" "0.75" "1" "1.25" "1.5" "1.75" "2"; do
