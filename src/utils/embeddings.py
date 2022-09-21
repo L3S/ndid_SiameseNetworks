@@ -27,7 +27,7 @@ def _load_vectors_path(path):
 
 
 def load_vectors(name='embeddings'):
-    return _load_vectors_path(get_datadir(name + '.pbz2'))
+    return _load_vectors_path(get_vectorsdir(name + '.pbz2'))
 
 
 def save_vectors(values, labels, name='embeddings'):
@@ -54,7 +54,7 @@ def calc_vectors(ds, model):
         ds_vectors.extend(predictions.numpy().tolist())
         ds_labels.extend(labels.numpy().tolist())
 
-    return np.array(ds_vectors, dtype='float32'), np.array(ds_labels, dtype='uint8')
+    return np.array(ds_vectors, dtype='float32'), np.array(ds_labels, dtype='uint32')
 
 
 def calc_vectors_fn(ds, fn, *args):
@@ -66,7 +66,7 @@ def calc_vectors_fn(ds, fn, *args):
             ds_vectors.append(vector)
             ds_labels.append(label)
 
-    return np.array(ds_vectors, dtype='float32'), np.array(ds_labels, dtype='uint8')
+    return np.array(ds_vectors, dtype='float32'), np.array(ds_labels, dtype='uint32')
 
 
 def evaluate_vectors(values, labels):
@@ -127,8 +127,9 @@ def load_weights_of(model: tf.keras.Model, dataset: AsbDataset):
         model.fit(dataset.get_train(), validation_data=dataset.get_val())
         model.save_weights(model_file)
 
-        print('Model trained, evaluating...')
-        model.evaluate(dataset.get_test())
+        if dataset.get_test() is not None:
+            print('Model trained, evaluating...')
+            model.evaluate(dataset.get_test())
 
 
 def get_embeddings_of(model: tf.keras.Model, dataset: AsbDataset):
@@ -138,6 +139,6 @@ def get_embeddings_of(model: tf.keras.Model, dataset: AsbDataset):
         return _load_vectors_path(embedding_file)
     else:
         print('calculating vectors...')
-        emb_vectors, emb_labels = calc_vectors(dataset.get_combined(), model)
+        emb_vectors, emb_labels = calc_vectors(dataset.get_train(), model)
         _save_vectors_path(emb_vectors, emb_labels, embedding_file)
         return emb_vectors, emb_labels

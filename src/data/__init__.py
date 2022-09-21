@@ -51,9 +51,12 @@ class AsbDataset(ABC):
 
         if PRINT_SIZE:
             print(self.name, "dataset loaded")
-            print("Training size:", train_ds.cardinality().numpy())
-            print("Validation size:", val_ds.cardinality().numpy())
-            print("Evaluation size:", test_ds.cardinality().numpy())
+            if train_ds is not None:
+                print("Training size:", train_ds.cardinality().numpy())
+            if val_ds is not None:
+                print("Validation size:", val_ds.cardinality().numpy())
+            if test_ds is not None:
+                print("Evaluation size:", test_ds.cardinality().numpy())
 
     @abstractmethod
     def _load_dataset(self, image_size, batch_size, map_fn):

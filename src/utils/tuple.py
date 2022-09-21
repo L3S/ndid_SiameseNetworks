@@ -41,7 +41,7 @@ def produce_tuples(images, labels):
 
     # re arrange whole dataset by labels
     labels_stat = np.zeros((total_labels), dtype='uint16')
-    labels_train = np.empty((total_labels, images_per_label, image_shape), dtype='uint8')
+    labels_train = np.empty((total_labels, images_per_label, image_shape), dtype='uint32')
 
     for i in range(len(images)):
         tr_leb = labels[i]
@@ -54,24 +54,24 @@ def produce_tuples(images, labels):
         np.random.shuffle(labels_train[i])
 
     # create tuples
-    anchor_images = np.empty((total_tuples, image_shape), dtype='uint8')
-    anchor_labels = np.empty((total_tuples), dtype='uint8')
+    anchor_images = np.empty((total_tuples, image_shape), dtype='uint32')
+    anchor_labels = np.empty((total_tuples), dtype='uint32')
 
     for i in range(total_labels):
         for j in range(tuples_per_label):
             anchor_labels[i * tuples_per_label + j] = i
             anchor_images[i * tuples_per_label + j] = labels_train[i, j]
 
-    positive_images = np.empty((total_tuples, image_shape), dtype='uint8')
-    positive_labels = np.empty((total_tuples), dtype='uint8')
+    positive_images = np.empty((total_tuples, image_shape), dtype='uint32')
+    positive_labels = np.empty((total_tuples), dtype='uint32')
 
     for i in range(total_labels):
         for j in range(tuples_per_label):
             positive_labels[i * tuples_per_label + j] = i
             positive_images[i * tuples_per_label + j] = labels_train[i, tuples_per_label + j]
 
-    negative_images = np.empty((total_tuples, image_shape), dtype='uint8')
-    negative_labels = np.empty((total_tuples), dtype='uint8')
+    negative_images = np.empty((total_tuples, image_shape), dtype='uint32')
+    negative_labels = np.empty((total_tuples), dtype='uint32')
 
     for i in range(total_labels):
         for j in range(tuples_per_label):

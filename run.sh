@@ -3,8 +3,10 @@
 # exit on ctrl+c
 trap "exit" INT
 
+dataset=cifar10
 loss=contrastive
 dimensions=512
+epochs=5
 
 source /opt/anaconda3/etc/profile.d/conda.sh
 conda activate tf
