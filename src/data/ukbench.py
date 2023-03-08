@@ -2,7 +2,6 @@ import tensorflow as tf
 from src.utils.common import get_dataset
 from src.data import AsbDataset
 from glob import glob
-from os import path
 
 DEFAULT_BATCH_SIZE = 32
 DEFAULT_IMAGE_SIZE = (640, 480)
@@ -41,8 +40,11 @@ class UKBench(AsbDataset):
             label = tf.strings.to_number(label, tf.int32)
             return resized, label
 
-        train_ds = tf.data.Dataset.from_tensor_slices(glob(str(get_dataset('ukbench')) + '/*.jpg'))\
-            .shuffle(batch_size).map(load).batch(batch_size)
+        dataset_path_glob = glob(str(get_dataset('ukbench')) + '/*.jpg')
+        train_ds = tf.data.Dataset.from_tensor_slices(dataset_path_glob).map(load)
+
+        if batch_size is not None:
+            train_ds = train_ds.batch(batch_size)
 
         if map_fn is not None:
             train_ds = train_ds.map(map_fn).prefetch(tf.data.AUTOTUNE)

@@ -13,8 +13,8 @@ parser.add_argument("--dataset", "-ds", help="Dataset", default="simple3",
 parser.add_argument("--loss", "-l", help="Loss function", default="contrastive",
                     choices=["contrastive", "offline-triplet", "semi-hard-triplet", "hard-triplet"], type=str)
 parser.add_argument("--margin", "-m", help="Margin for the loss function", default=1.0, type=float)
-parser.add_argument("--dimensions", "-d", help="The dimension of Siamese output", default=3, type=int)
-parser.add_argument("--epochs", "-e", help="Number of epochs, each epoch consists of 100 steps", default=1, type=int)
+parser.add_argument("--dimensions", "-d", help="The dimension of Siamese output", default=512, type=int)
+parser.add_argument("--epochs", "-e", help="Number of epochs, each epoch consists of 100 steps", default=5, type=int)
 
 
 class SimpleParams:
