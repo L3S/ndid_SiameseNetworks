@@ -1,6 +1,7 @@
 import sys
 sys.path.append("..")
 
+import time
 from keras.models import load_model
 from src.utils.common import get_modeldir
 from src import SimpleParams
@@ -44,12 +45,12 @@ else:
 
 
 projection_vectors, projection_labels = calc_vectors(dataset.get_combined(), inference_model)
-save_vectors(projection_vectors, projection_labels, inference_model.name + '_vectors')
+save_vectors(projection_vectors, projection_labels, inference_model.name + '_vectors_' + str(time.time()))
 project_embeddings(projection_vectors, projection_labels, inference_model.name)
 
 print('Computing UKBench vectors...')
 ukbench = UKBench(image_size=TARGET_SHAPE, map_fn=AlexNetModel.preprocess_input)
 ukbench_vectors, ukbench_labels = calc_vectors(ukbench.get_combined(), inference_model)
-save_vectors(ukbench_vectors, ukbench_labels, 'ukbench_' + inference_model.name + '_vectors')
+save_vectors(ukbench_vectors, ukbench_labels, 'ukbench_' + inference_model.name + '_vectors_' + str(time.time()))
 project_embeddings(ukbench_vectors, ukbench_labels, 'ukbench_' + inference_model.name)
 print('Done!\n')
