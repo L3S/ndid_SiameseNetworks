@@ -31,7 +31,7 @@ parser.add_argument("--epochs", "-e", help="Number of epochs, each epoch consist
 parser.add_argument("--seed", "-s", help="Skip setting seed value", default=False, type=bool)
 parser.add_argument("--ukbench", help="Compute UKBench vectors", default=True, type=bool)
 parser.add_argument("--save-vectors", help="Save embeddings", default=True, type=bool)
-parser.add_argument("--project-vectors", help="Project embeddings", default=False, type=bool)
+parser.add_argument("--project-vectors", help="Project embeddings", default=True, type=bool)
 
 
 class SimpleParams:

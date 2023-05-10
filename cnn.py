@@ -83,7 +83,7 @@ else:
 
 start = time.time()
 projection_vectors, projection_labels = calc_vectors(dataset.get_combined(), inference_model)
-log.info('Siamese embs %s calculated in %ss', params.basename, time.time() - start)
+log.info('Siamese embs %s calculated in %ss', inference_model.name, time.time() - start)
 if params.save_vectors:
     save_embeddings(projection_vectors, projection_labels, inference_model.name + '_vectors')
 if params.project_vectors:
