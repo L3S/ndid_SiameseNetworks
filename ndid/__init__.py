@@ -28,7 +28,7 @@ parser.add_argument("--dimensions", "-d", help="The dimension of Siamese output"
 parser.add_argument("--epochs", "-e", help="Number of epochs, each epoch consists of 100 steps", default=5, type=int)
 
 # other params
-parser.add_argument("--seed", "-s", help="Skip setting seed value", default=False, type=bool)
+parser.add_argument("--seed", "-s", help="Set seed value", default="", type=str)
 parser.add_argument("--ukbench", help="Compute UKBench vectors", default=True, type=bool)
 parser.add_argument("--save-vectors", help="Save embeddings", default=True, type=bool)
 parser.add_argument("--project-vectors", help="Project embeddings", default=True, type=bool)
@@ -54,11 +54,13 @@ class SimpleParams:
         self.save_vectors = save_vectors
         self.project_vectors = project_vectors
 
-        self.seed = ''
         self.basename = model + '_' + dataset + '_d' + str(dimensions) + '_m' + str(margin) + '_s' + str(epochs * 100) + '_' + loss
-        if not seed:
+
+        if len(seed) > 0:
+            self.seed = seed
+        else:
             self.seed = str(int(time.time()))
-            self.basename += '_' + self.seed
+        self.basename += '_' + self.seed
 
     def get_dataset(self, **kwargs):
         if self.dataset == "cifar10":

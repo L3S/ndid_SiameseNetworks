@@ -37,4 +37,6 @@ class Cifar10(AsbDataset):
         train_ds_size = train_ds.cardinality().numpy()
         train_ds = train_ds.skip(train_ds_size / 10)
         val_ds = train_ds.take(train_ds_size / 10)
+
+        train_ds = train_ds.concatenate(val_ds).concatenate(test_ds)
         return train_ds, val_ds, test_ds

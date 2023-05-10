@@ -6,6 +6,7 @@ from ndid.data.ukbench import UKBench
 from ndid.utils.common import get_modeldir, get_datadir
 from ndid.utils.embeddings import project_embeddings, calc_vectors, save_vectors, save_embeddings, load_vectors
 
+tf.get_logger().setLevel('INFO')
 log.basicConfig(filename="logfile.log", level=log.INFO, format='%(asctime)s %(message)s')
 
 params = SimpleParams.parse()
@@ -61,7 +62,7 @@ else:
     #     if params.project_vectors:
     #         project_embeddings(ukbench_vectors, ukbench_labels, 'ukbench_' + model_basename)
 
-    embeddings_file = get_datadir(emb_model.name + '_' + dataset.name)
+    embeddings_file = get_datadir(emb_model.name + '_' + dataset.name + '_' + params.seed)
     if embeddings_file.exists():
         emb_vectors, emb_labels = load_vectors(embeddings_file)
     else:
