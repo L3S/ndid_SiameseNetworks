@@ -3,8 +3,13 @@
 __pycache__
 
 # non-persistend data
+/backup
 /data
 /datasets
 /models
+/vectors
+/oldrun
 /logs
 /logs_*
+*.out
+*.err
