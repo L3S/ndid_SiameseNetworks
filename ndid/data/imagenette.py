@@ -35,8 +35,6 @@ class Imagenette(AsbDataset):
             test_ds = test_ds.map(map_fn).prefetch(tf.data.AUTOTUNE)
 
         test_ds_size = test_ds.cardinality().numpy()
-        val_ds = test_ds.take(test_ds_size / 2)
-        test_ds = test_ds.skip(test_ds_size / 2)
-
-        train_ds = train_ds.concatenate(val_ds).concatenate(test_ds)
+        test_ds = test_ds.take(test_ds_size / 2)
+        val_ds = test_ds.skip(test_ds_size / 2)
         return train_ds, val_ds, test_ds

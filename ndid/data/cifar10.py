@@ -35,6 +35,6 @@ class Cifar10(AsbDataset):
             test_ds = test_ds.map(map_fn).prefetch(tf.data.AUTOTUNE)
 
         test_ds_size = test_ds.cardinality().numpy()
-        test_ds = test_ds.skip(test_ds_size / 10)
-        val_ds = test_ds.take(test_ds_size / 10)
+        test_ds = test_ds.take(test_ds_size / 2)
+        val_ds = test_ds.skip(test_ds_size / 2)
         return train_ds, val_ds, test_ds
