@@ -29,7 +29,7 @@ else:
     model_basename = params.model + '_' + dataset.name + '_' + params.seed
     print('Inference model does not exist, training...')
     if params.model != 'efficientnet' and params.model != 'vit':
-        model = params.get_model(train_size=len(dataset.get_train()))
+        model = params.get_model(train_size=len(dataset.get_train()), weights=None)
         model.compile()
         model.summary()
         model_file = get_modeldir(model_basename + '.h5')
@@ -81,6 +81,7 @@ else:
 
     print('Training siamese...')
     start = time.time()
+    siamese.summary()
     siamese.fit(emb_ds, num_classes=dataset.num_classes)
     log.info('Siamese model %s trained in %ss', params.basename, time.time() - start)
     siamese.inference_model.save(inference_model_file)
