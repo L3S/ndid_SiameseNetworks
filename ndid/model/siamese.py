@@ -1,5 +1,4 @@
 from ndid.utils.common import *
-import tensorflow_addons as tfa
 from ndid.utils.distance import cosine_distance, euclidean_distance
 from tensorflow.keras import layers, callbacks, Model
 
@@ -68,7 +67,7 @@ class SiameseModel(Model):
         self.projection_model = projection_model
         self.inference_model = inference_model
 
-    def compile(self, optimizer=tf.keras.optimizers.RMSprop(), loss_margin=None, loss=tfa.losses.ContrastiveLoss, **kwargs):
+    def compile(self, loss, loss_margin=None, optimizer=tf.keras.optimizers.RMSprop(), **kwargs):
 
         if loss_margin is None:
             loss_margin = self.loss_margin

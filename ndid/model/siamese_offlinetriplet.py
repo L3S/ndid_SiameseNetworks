@@ -60,7 +60,7 @@ class SiameseOfflineTripletModel(Model):
         self.projection_model = projection_model
         self.inference_model = inference_model
 
-    def compile(self, optimizer=tf.keras.optimizers.RMSprop(), loss_margin=None, loss=OfflineTripletLoss, **kwargs):
+    def compile(self, loss=OfflineTripletLoss, loss_margin=None, optimizer=tf.keras.optimizers.RMSprop(), **kwargs):
 
         if loss_margin is None:
             loss_margin = self.loss_margin
