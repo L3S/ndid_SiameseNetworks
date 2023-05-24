@@ -73,7 +73,7 @@ class SimpleParams:
             raise ValueError("Dataset not found")
         return cls(**kwargs)
 
-    def get_model(self, **kwargs):
+    def get_model_class(self):
         if self.model == "alexnet":
             cls = AlexNetModel
         elif self.model == "efficientnet":
@@ -88,7 +88,10 @@ class SimpleParams:
             cls = VitModel
         else:
             raise ValueError("Model not found")
-        return cls(**kwargs)
+        return cls
+
+    def get_model(self, **kwargs):
+        return self.get_model_class()(**kwargs)
 
     def get_loss_class(self):
         if self.loss == "contrastive":

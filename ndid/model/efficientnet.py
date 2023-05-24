@@ -9,6 +9,7 @@ TARGET_SHAPE = (384, 384)
 
 MODEL_URL = "https://tfhub.dev/google/imagenet/efficientnet_v2_imagenet1k_s/feature_vector/2"
 
+
 class EfficientNetModel(Sequential):
     def __init__(self, train_size=None):
         super(EfficientNetModel, self).__init__([

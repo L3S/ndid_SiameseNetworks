@@ -11,12 +11,15 @@ log.basicConfig(filename="logfile.log", level=log.INFO, format='%(asctime)s %(me
 
 params = SimpleParams.parse()
 dataset = params.get_dataset(
-    image_size=params.get_model().get_target_shape(),
-    map_fn=params.get_model().preprocess_input
+    image_size=params.get_model_class().get_target_shape(),
+    map_fn=params.get_model_class().preprocess_input
 )
 
 if params.ukbench:
-    ukbench = UKBench(image_size=params.get_model().get_target_shape(), map_fn=params.get_model().preprocess_input)
+    ukbench = UKBench(
+        image_size=params.get_model_class().get_target_shape(),
+        map_fn=params.get_model_class().preprocess_input
+    )
 
 inference_model_file = get_modeldir('siamese_inference_' + params.basename + '.tf')
 if inference_model_file.exists():
@@ -28,6 +31,7 @@ else:
     if params.model != 'efficientnet' and params.model != 'vit':
         model = params.get_model(train_size=len(dataset.get_train()))
         model.compile()
+        model.summary()
         model_file = get_modeldir(model_basename + '.h5')
         if model_file.exists():
             model.load_weights(model_file)

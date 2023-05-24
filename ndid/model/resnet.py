@@ -10,16 +10,16 @@ TARGET_SHAPE = (224, 224)
 PRETRAIN_EPOCHS = 20
 EMBEDDING_VECTOR_DIMENSION = 4096
 
+
 class ResNetModel(Model):
     def __init__(self, input_shape=TARGET_SHAPE, weights="imagenet", train_size=None, **kwargs):
         if weights == "imagenet":
             core = tf.keras.applications.resnet_v2.ResNet50V2(
                 include_top=False,
-                input_shape=(224, 224, 3),
+                input_shape=TARGET_SHAPE + (3,),
                 weights="imagenet",
                 # pooling="avg",
             )
-            core.summary()
             core.trainable = False
 
             model = Sequential([
@@ -60,7 +60,8 @@ class ResNetModel(Model):
 
     def get_embedding_model(self):
         core = Model(inputs=self.input, outputs=self.layers[-2].output, name=self.name + '_emb')
-        for layer in core.layers: layer.trainable = False
+        for layer in core.layers:
+            layer.trainable = False
         return core
 
     @staticmethod

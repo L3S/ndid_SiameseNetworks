@@ -59,7 +59,8 @@ class AlexNetModel(Sequential, AsbModel):
 
     def get_embedding_model(self):
         core = Model(inputs=self.input, outputs=self.layers[-2].output, name=self.name + '_emb')
-        for layer in core.layers: layer.trainable = False
+        for layer in core.layers:
+            layer.trainable = False
         return core
 
     @staticmethod

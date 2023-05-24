@@ -9,6 +9,7 @@ TARGET_SHAPE = (224, 224)
 
 MODEL_URL = "https://tfhub.dev/sayakpaul/vit_s16_fe/1"
 
+
 class VitModel(Sequential):
     def __init__(self, train_size=None):
         super(VitModel, self).__init__([

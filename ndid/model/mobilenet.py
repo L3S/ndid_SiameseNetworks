@@ -10,6 +10,7 @@ TARGET_SHAPE = (224, 224)
 PRETRAIN_EPOCHS = 20
 EMBEDDING_VECTOR_DIMENSION = 1024
 
+
 class MobileNetModel(Model):
     def __init__(self, train_size=None, **kwargs):
         core = tf.keras.applications.MobileNet(
@@ -48,7 +49,8 @@ class MobileNetModel(Model):
     def get_embedding_model(self):
         core = Model(inputs=self.input, outputs=self.layers[-7].output)
         core = Sequential([core, layers.Flatten()], name=self.name + '_emb')
-        for layer in core.layers: layer.trainable = False
+        for layer in core.layers:
+            layer.trainable = False
         return core
 
     @staticmethod
