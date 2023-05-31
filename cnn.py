@@ -28,7 +28,7 @@ if inference_model_file.exists():
 else:
     model_basename = params.model + '_' + dataset.name + '_' + params.seed
     print('Inference model does not exist, training...')
-    if params.model != 'efficientnet' and params.model != 'vit':
+    if params.model != 'vit':
         model = params.get_model(train_size=len(dataset.get_train()), weights=None)
         model.compile()
         model.summary()

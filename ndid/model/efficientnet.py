@@ -1,24 +1,68 @@
-from ndid.utils.common import *
-import tensorflow_hub as hub
-from tensorflow.keras import layers, callbacks, datasets, Sequential
+import tensorflow as tf
+from tensorflow.keras import layers, callbacks, Model, Sequential
+from ndid.utils.common import get_logdir
 
-tensorboard_cb = callbacks.TensorBoard(get_logdir("efficientnet/fit"))
+tensorboard_cb = callbacks.TensorBoard(get_logdir('efficientnet/fit'))
 
-BATCH_SIZE = 256
-TARGET_SHAPE = (384, 384)
+BATCH_SIZE = 32
+TARGET_SHAPE = (224, 224)
 
-MODEL_URL = "https://tfhub.dev/google/imagenet/efficientnet_v2_imagenet1k_s/feature_vector/2"
+PRETRAIN_EPOCHS = 20
+EMBEDDING_VECTOR_DIMENSION = 1280
 
 
-class EfficientNetModel(Sequential):
-    def __init__(self, train_size=None):
-        super(EfficientNetModel, self).__init__([
-            hub.KerasLayer(MODEL_URL, trainable=False)  # EfficientNet V2 S backbone, frozen weights
-        ], name='efficientnet')
-        self.build((None,) + TARGET_SHAPE + (3,))
+class EfficientNetModel(Model):
+    def __init__(self, input_shape=TARGET_SHAPE, weights="imagenet", train_size=None, **kwargs):
+        if weights == "imagenet":
+            core = tf.keras.applications.EfficientNetV2S(
+                include_top=False,
+                input_shape=input_shape + (3,),
+                weights="imagenet",
+                # pooling="avg",
+            )
+            core.trainable = False
 
-    def fit(self, x=None, y=None, callbacks=[tensorboard_cb], **kwargs):
-        return super().fit(x=x, y=y, callbacks=callbacks, **kwargs)
+            model = Sequential([
+                core,
+                layers.Flatten(),
+                layers.Dense(4096, activation='relu'),
+                layers.Dense(4096, activation='relu'),
+                layers.Dense(10, activation='softmax')
+            ])
+        else:
+            model = tf.keras.applications.EfficientNetV2S(
+                include_top=True,
+                input_shape=input_shape + (3,),
+                weights=None,
+                classes=10,
+                **kwargs
+            )
+
+        super(EfficientNetModel, self).__init__(inputs=model.input, outputs=model.output, name='efficientnet')
+        self.train_size = train_size
+
+    def compile(self,
+                optimizer=None,
+                loss=tf.keras.losses.SparseCategoricalCrossentropy(),
+                metrics=['accuracy'],
+                **kwargs):
+
+        if optimizer is None and self.train_size is not None:
+            pretrain_steps = PRETRAIN_EPOCHS * self.train_size
+            optimizer = tf.keras.optimizers.RMSprop(tf.keras.optimizers.schedules.CosineDecay(1e-3, pretrain_steps))
+        elif optimizer is None:
+            optimizer = tf.keras.optimizers.RMSprop()
+
+        super().compile(optimizer=optimizer, loss=loss, metrics=metrics, **kwargs)
+
+    def fit(self, x=None, y=None, batch_size=None, epochs=PRETRAIN_EPOCHS, callbacks=[tensorboard_cb], **kwargs):
+        return super().fit(x=x, y=y, batch_size=batch_size, epochs=epochs, callbacks=callbacks, **kwargs)
+
+    def get_embedding_model(self):
+        core = Model(inputs=self.input, outputs=self.layers[-2].output, name=self.name + '_emb')
+        for layer in core.layers:
+            layer.trainable = False
+        return core
 
     @staticmethod
     def get_target_shape():
@@ -26,6 +70,5 @@ class EfficientNetModel(Sequential):
 
     @staticmethod
     def preprocess_input(image, label):
-        image = tf.image.convert_image_dtype(image, tf.float32)
-        image = tf.image.resize(image, TARGET_SHAPE, method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+        image = tf.keras.applications.efficientnet_v2.preprocess_input(image)
         return image, label
