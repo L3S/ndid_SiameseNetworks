@@ -24,7 +24,7 @@ def load_embeddings_pbz2(name='embeddings', method=None):
         return np.array(result[0], dtype='float32'), np.array(result[1])
 
 
-def createIndex(data, indexstring, metric=faiss.METRIC_L2, gpu=0, efConstruction=-1):
+def createIndex(data, indexstring, metric=faiss.METRIC_L2, efConstruction=-1):
     """
     creates from the data (np.array) the index specified in the indexstring
     (string), if the index is not trained, it will be trained on the data given,
@@ -38,7 +38,6 @@ def createIndex(data, indexstring, metric=faiss.METRIC_L2, gpu=0, efConstruction
 
     d = len(data[0])  # dimensionality of the embedding vectors
     index = faiss.index_factory(d, indexstring, metric)  # creation of the index
-
     if not index.is_trained:
         print("Index is not trained, training now")
         index.train(data)
@@ -51,7 +50,7 @@ def createIndex(data, indexstring, metric=faiss.METRIC_L2, gpu=0, efConstruction
     return (index, stoptime - starttime)
 
 
-def search(data, index, threshold, probes=-1):
+def search(data, index, nn, probes=-1):
     """
     given the search query (data, np.array) it searches the index. If the index
     is an IVF index, it visits probes number of cells. Not available for HNSW
@@ -65,42 +64,49 @@ def search(data, index, threshold, probes=-1):
     starttime = time.perf_counter()
     if probes != -1:
         index.nprobe = probes
-    lim, D, I = index.range_search(data, threshold)
+    D, I = index.search(data, nn)
     stoptime = time.perf_counter()
-    print(max(D))
     print("Searching took {:.2f} s".format(stoptime - starttime))
-    return lim, D, I, stoptime - starttime
+    return D, I, stoptime - starttime
 
 
-def trueMatches(index_labels, query_labels, NNtable, lim):
+def trueMatches(index_labels, query_labels, NN_table, ukbench=False):
     """
-    given the table of range search results (NNtable, lim), it calculates how many
+    given a set of nearest neighbours in the NNtable, it calculates how many
     can also be found in the truthtable (list of tuples) given. IDIndex and Query
     contain the IDs of the index and query vectors. Those IDs are not included
     when creating the index or searching, so the results have to be mapped to
     the original index to use the truthtable.
     """
     nCandidates = 0
-    classified = collections.Counter()
-    for query_id in lim[:-1]:
-        for index_id in NNtable[lim[query_id]:lim[query_id + 1]]:
-            if index_labels[index_id] == query_labels[query_id]:
-                nCandidates += 1
-                classified[(index_labels[index_id], query_labels[query_id])] += 1
-            elif index_labels[index_id] < query_labels[query_id]:
-                classified[(index_labels[index_id], query_labels[query_id])] += 1
-            else:
-                classified[(query_labels[query_id], index_labels[index_id])] += 1
+    index_labels_u = np.array(index_labels.copy())
+    query_labels_u = np.array(query_labels.copy())
+    if ukbench:
+        index_labels_u = index_labels_u // 4
+        query_labels_u = query_labels_u // 4
+    # classified = collections.Counter()
+    NN_labels = index_labels_u[NN_table]
+    # NN_labels = np.empty_like(NN_table)
+    # for row_ID, row in enumerate(NN_table):
+    #     NN_labels[row_ID,:] = index_labels_u[row].copy()
 
-    return nCandidates, classified
+    query_labels_u = np.reshape(query_labels_u, (-1, 1))
+
+    truthtable = NN_labels == query_labels_u
+
+    all_matches = query_labels_u == index_labels_u
+
+    allMatch_perQuery = np.reshape(np.sum(all_matches, axis=1), (-1, 1))
+    nCandidates = np.sum(truthtable)
+
+    return nCandidates, truthtable, allMatch_perQuery
 
 
-def findNN(index_data, query_data, index_labels, query_labels, indexstring,
-           threshold, allCandidates, data_table, normtime,
-           metric=faiss.METRIC_L2, startstep=0.25, probe=-1, ukbench=False):
+def findNN(index_data, query_data, index_labels, query_labels, indexstring, treshold, allCandidates, data_table,
+           normtime, metric=faiss.METRIC_L2, startstep=1, probe=1, ukbench=False):
     """
     finds (approximately) the number of nearest neigbours, for which the recall is
-    above the threshold. The index is build from EmbIndex like specified in
+    above the treshold. The index is build from EmbIndex like specified in
     indexstring, the query is EmbQuery, from the truthtable and IDIndex and
     IDQuery the number of true matches is calculated. In the beginning the
     algorithm increases the number of nearest neighbours by startstep.
@@ -110,42 +116,41 @@ def findNN(index_data, query_data, index_labels, query_labels, indexstring,
 
     """
     print("starting the search")
-    nn = 0.5
+    nn = 1
     step = startstep
     recall = 0
     once_above = False
     once_below = False
     print("start value: {}, start step: {}".format(nn, step))
     index, indextime = createIndex(index_data, indexstring, metric)
-
-    lim, D, I, searchtime = search(query_data, index, nn)
-    data_table = NN_analysis(index_labels, query_labels, I, lim, data_table, normtime + indextime + searchtime, nn,
+    D, I, searchtime = search(query_data, index, nn, probe)
+    data_table = NN_analysis(index_labels, query_labels, I, data_table, normtime + indextime + searchtime,
                              ukbench=ukbench)
     recall = data_table[-1][5]
-    print(recall, nn)
+    print("NN: {}; Recall: {:.2f}".format(nn, recall))
     while True:
-        if recall > threshold:
+        if (recall >= treshold and (step == 1 or nn == 1)):
+            break
+        if recall > treshold:
             once_above = True
             if once_below:
-                step = step / 2
+                step = max(int(step / 2), 1)
             else:
                 step = step * 2
-            nn = max(nn - step, 0)
+            nn = max(nn - step, 1)
         else:
             once_below = True
             if once_above:
-                step = step / 2
+                step = max(int(step / 2), 1)
             else:
                 step = step * 2
             nn += step
-        lim, D, I, searchtime = search(query_data, index, nn, probe)
-
-        data_table = NN_analysis(index_labels, query_labels, I, lim, data_table, normtime + indextime + searchtime, nn,
+        D, I, searchtime = search(query_data, index, nn, probe)
+        data_table = NN_analysis(index_labels, query_labels, I, data_table, normtime + indextime + searchtime,
                                  ukbench=ukbench)
         recall = data_table[-1][5]
-        print(recall, nn)
-        if recall > threshold and step < 0.001:
-            break
+        print("NN: {}; Recall: {:.2f}".format(nn, recall))
+
     return data_table
 
 
@@ -230,63 +235,125 @@ def split_index_query_ukbench(values, labels, normed=True):
 
 def norm(values):
     temp = time.perf_counter()
-    values = values / np.linalg.norm(values, axis=1).reshape(-1, 1)
+    norm = np.linalg.norm(values, axis=1)
+    if (norm == 0).any():
+        print('0 Norm!')
+        norm[norm == 0] = np.inf
+    values = values / norm.reshape(-1, 1)
     normtime = time.perf_counter() - temp
     print('Values normed!, Norm: ', np.amax(np.linalg.norm(values, axis=1)), np.amin(np.linalg.norm(values, axis=1)))
     return values, normtime
 
 
-def NN_analysis(index_labels, query_labels, NN_table, lim, data_table, runtime, distance, ukbench=False):
-    num_queries = len(lim) - 1
-    num_candidates = len(NN_table)
-    index_labels_u = index_labels.copy()
-    query_labels_u = query_labels.copy()
-    if ukbench:
-        index_labels_u = index_labels_u // 4
-        query_labels_u = query_labels_u // 4
-    index_label_counts = collections.Counter(index_labels_u)
-    query_label_counts = collections.Counter(query_labels_u)
-    true_matches = collections.Counter()
-    for label in list(index_label_counts):
-        true_matches[label] += index_label_counts[label] * query_label_counts[label]
-    MAP = 0
-    NDCG = 0
-    tp_all = 0
+def NN_analysis(index_labels, query_labels, NN_table, D_table, data_table, runtime, ukbench=False):
+    _, truth_table, matches_query = trueMatches(index_labels, query_labels, NN_table, ukbench=ukbench)
+    print('Min number of matches per Query: ', np.amin(matches_query))
+    num_queries, NN = truth_table.shape
+    D_table = np.sqrt(D_table)
+    distances = np.quantile(D_table, np.linspace(0.0, 1, num=101))
+    if distances.max() < 2.0:
+        distances = np.append(distances, 2.0)
 
-    for query_id in range(num_queries):
-        tp = 0
-        AP = 0
-        DCG = 0
-        for position, index_id in enumerate(NN_table[lim[int(query_id)]:lim[int(query_id + 1)]]):
-            if index_labels_u[index_id] == query_labels_u[query_id]:
-                tp += 1
-                AP += tp * 1. / (position + 1)
-                DCG += 1. / (np.log2(position + 2))
-                tp_all += 1
+    # distances = np.reshape(distances, (-1, 1, 1))
 
-        if index_label_counts[query_labels_u[query_id]] == 0:
-            MAP += 0
-            print('indexlabel of query is zero')
-        else:
-            MAP += AP * 1. / index_label_counts[query_labels_u[query_id]]
-        norm = np.sum(1. / np.log2(np.arange(2, tp + 3)))
-        NDCG += DCG / norm
-    MAP = MAP * 1. / num_queries
-    NDCG = NDCG * 1. / num_queries
-    Jaccard = tp_all * 1. / (sum(true_matches.values()) - tp_all + num_candidates)
-    if num_candidates == 0:
-        Precision = 0
-        Recall = 0
-        f1 = 0
-        Accelleration = 0
-    else:
-        Precision = tp_all / (num_candidates)
-        Recall = tp_all / sum(true_matches.values())
-        f1 = 2 * Precision * Recall / (Precision + Recall)
-        Accelleration = len(index_labels_u) * 1. / num_candidates
-    data_table.append([distance, tp_all, sum(true_matches.values()), len(index_labels_u), num_queries, Recall,
-                       Precision, MAP, NDCG, Jaccard, Accelleration, f1, runtime])
+    # lower_dist = D_table < distances
+    # print(lower_dist.shape)
+    # t_included = truth_table * lower_dist
+    # k_included = np.cumsum(lower_dist, axis=2, dtype=float)
 
+    # k_included[k_included == 0] = np.inf
+
+    # candidates = np.cumsum(t_included, axis=2)
+    # Recall = candidates/matches_query
+    # if (Recall>1).any():
+    #     print(np.amax(Recall))
+    #     raise AssertionError ('Recall > 1, please check!')
+    # Precision = candidates/k_included
+    # Jaccard = candidates/(k_included+matches_query-candidates)
+    # F1 = 2*Precision*Recall/(Precision+Recall)
+    # F1[np.isnan(F1)]=0
+    # Accelleration = len(index_labels)/k_included
+
+    # Recall = np.mean(Recall, axis=1)
+    # Precision = np.mean(Precision, axis=1)
+    # F1 = np.mean(F1, axis=1)
+    # Jaccard = np.mean(Jaccard, axis=1)
+    # Accelleration = np.mean(Accelleration, axis=1)
+
+    # AP = np.cumsum(candidates/k_included*t_included,axis=2)*1/matches_query
+    # MAP = np.sum(AP, axis=1)/num_queries
+    # DCG = np.cumsum(1./(np.log2(k_included+1))*t_included, axis=2)
+    # norm_DCG = np.cumsum(1./np.log2(np.arange(2, np.amax(matches_query)+2)))
+    # NDCG = np.sum(DCG*1./norm_DCG[candidates-1], axis=1)/num_queries
+
+    # true_matches = np.sum(candidates, axis=1)
+
+    # print(MAP)
+
+    # data = {'Range': distances.flatten(), 'true matches': true_matches[:,-1],
+    #         'GT': np.full((100), np.sum(matches_query)),
+    #         'index_entries':np.full(100, len(index_labels)),
+    #         'query_entries':np.full(100, len(query_labels)),
+    #         'Recall':Recall[:,-1], 'Precision':Precision[:,-1],
+    #         'MAP':MAP[:,-1], 'NDCG':NDCG[:,-1],
+    #         'Jaccard':Jaccard[:,-1], 'Accelleration':Accelleration[:,-1], 'F1':F1[:,-1]}
+
+    data = np.empty((distances.shape[0], 13))
+    columns = ['Range', 'candidates', 'true matches',
+               'GT', 'index_entries', 'query_entries', 'Recall', 'Precision',
+               'MAP', 'NDCG', 'Jaccard', 'Accelleration', 'F1']
+
+    for i, distance in enumerate(distances):
+        print('Step ', i, 'Distance ', distance)
+
+        lower_dist = D_table <= distance
+        t_included = truth_table * lower_dist
+        k_included = np.cumsum(lower_dist, axis=1, dtype=float)
+        max_k = int(np.amax(k_included))
+
+        t_included = t_included[:, :max_k]
+        k_included = k_included[:, :max_k]
+
+        k_included[k_included == 0] = np.inf
+
+        if np.sum(lower_dist) == 0:
+            print(np.sum(lower_dist))
+            data[i, :] = [distance, np.sum(lower_dist), 0, 0,
+                          0, 0, 0,
+                          0, 0, 0, 0,
+                          0, 0]
+            continue
+        candidates = np.cumsum(t_included, axis=1)
+        Recall = candidates / matches_query
+        if (Recall > 1).any():
+            print(np.amax(Recall))
+            raise AssertionError('Recall > 1, please check!')
+        Precision = candidates / k_included
+        Jaccard = candidates / (k_included + matches_query - candidates)
+        F1 = 2 * Precision * Recall / (Precision + Recall)
+        F1[np.isnan(F1)] = 0
+        Accelleration = len(index_labels) / k_included
+
+        Recall = np.mean(Recall, axis=0)
+        Precision = np.mean(Precision, axis=0)
+        F1 = np.mean(F1, axis=0)
+        Jaccard = np.mean(Jaccard, axis=0)
+        Accelleration = np.mean(Accelleration, axis=0)
+
+        AP = np.cumsum(candidates / k_included * t_included, axis=1) * 1 / matches_query
+        MAP = np.sum(AP, axis=0) / num_queries
+        DCG = np.cumsum(1. / (np.log2(k_included + 1)) * t_included, axis=1)
+        norm_DCG = np.cumsum(1. / np.log2(np.arange(2, np.amax(matches_query) + 2)))
+        NDCG = np.sum(DCG * 1. / norm_DCG[candidates - 1], axis=0) / num_queries
+
+        true_matches = np.sum(candidates, axis=0).flatten()
+
+        data[i, :] = [distance, np.sum(lower_dist), true_matches[-1], np.sum(matches_query),
+                      len(index_labels), len(query_labels), Recall[-1],
+                      Precision[-1], MAP[-1], NDCG[-1], Jaccard[-1],
+                      Accelleration[-1], F1[-1]]
+
+    data_table = pd.DataFrame(data=data, columns=columns)
     return data_table
 
 
@@ -294,7 +361,9 @@ def get_file_names(read_all, input_folder, loops={}, analysis='params', skip='',
     input_files = []
     output_files = []
     datasets = []
+    models = []
     if read_all:
+        print('Scanning now input folder ', input_folder)
         for exp_file in os.scandir(input_folder):
             if exp_file.is_dir():
                 continue
@@ -305,15 +374,23 @@ def get_file_names(read_all, input_folder, loops={}, analysis='params', skip='',
             elif skip_not != '' and skip_not not in filename_parts:
                 continue
 
-            if 'ukbench' in filename_parts:
-                dataset = 'ukbench'
-            elif 'imagenette' in filename_parts:
-                dataset = 'imagenette'
-            elif 'cifar10' in filename_parts:
-                dataset = 'cifar10'
+            if filename_parts[0] == 'siamese':
+                dataset = filename_parts[3]
+                model = filename_parts[2]
             else:
-                print('WARNING: No dataset could be infered from the filename')
-                dataset = None
+                if filename_parts[0] not in set(['imagenette', 'cifar10', 'ukbench']):
+                    model = filename_parts[0]
+                    dataset = filename_parts[1]
+                else:
+                    dataset = filename_parts[0]
+                    if dataset == 'ukbench':
+
+                        if filename_parts[1] == 'siamese':
+                            model = filename_parts[3]
+                        else:
+                            model = filename_parts[1]
+                    else:
+                        model = filename_parts[1]
 
             if analysis == 'stats':
                 if filename_parts[-1] == 'vectors.pbz2':
@@ -324,6 +401,7 @@ def get_file_names(read_all, input_folder, loops={}, analysis='params', skip='',
                     outfile_name = '.'.join(filename_parts[:-1])
                     output_files.append(outfile_name)
                     datasets.append(dataset)
+                    models.append(model)
 
             else:
                 if filename_parts[-1] != 'vectors.pbz2':
@@ -332,6 +410,7 @@ def get_file_names(read_all, input_folder, loops={}, analysis='params', skip='',
                 outfile_name = '_'.join(filename_parts[:-1])
                 output_files.append(outfile_name)
                 datasets.append(dataset)
+                models.append(model)
 
     else:
         for model in loops['model']:
@@ -347,21 +426,24 @@ def get_file_names(read_all, input_folder, loops={}, analysis='params', skip='',
                     output_files.append(outfile_name)
                     input_files.append(infile_name)
                     datasets.append(dataset)
+                    models.append(model)
 
-                elif model == 'SIFT':
+                if model == 'SIFT':
                     if dataset == 'ukbench':
                         for dict_name in loops['dict']:
                             infile_name = dataset + '_siftBOF_dict_' + dict_name + '_d512_vectors'
-                            outfile_name = infile_name + '_' + indexstring + '.csv'
+                            outfile_name = dataset + '_siftBOF_dict_' + dict_name
                             output_files.append(outfile_name)
                             input_files.append(infile_name)
                             datasets.append(dataset)
+                            models.append(model)
                     else:
                         infile_name = dataset + '_siftBOF_dict_' + dataset + '_d512_vectors'
-                        outfile_name = infile_name + '_' + indexstring + '.csv'
+                        outfile_name = dataset + '_siftBOF_dict_' + dataset
                         output_files.append(outfile_name)
                         input_files.append(infile_name)
                         datasets.append(dataset)
+                        models.append(model)
 
                 elif model == 'hsv':
                     infile_name = dataset + '_hsv_512_vectors.pbz2'
@@ -369,6 +451,7 @@ def get_file_names(read_all, input_folder, loops={}, analysis='params', skip='',
                     output_files.append(outfile_name)
                     input_files.append(infile_name)
                     datasets.append(dataset)
+                    models.append(model)
 
                 else:
                     for s in loops['s']:
@@ -384,16 +467,57 @@ def get_file_names(read_all, input_folder, loops={}, analysis='params', skip='',
 
                                     outfile_name = filename
                                     infile_name = filename + '_vectors.pbz2'
-                                else:
-                                    filename = 'siamese_inference_' + model + '_' + dataset + '_d512_m' + str(
-                                        m) + '_s' + str(s) + '_' + l
-                                    outfile_name = filename
-                                    infile_name = filename + '_vectors.pbz2'
+                                    output_files.append(outfile_name)
+                                    input_files.append(infile_name)
+                                    datasets.append(dataset)
+                                    models.append(model)
+                                elif analysis == 'new_params':
+                                    for date in loops['date']:
+                                        if date > 10000:
+                                            filename = 'siamese_inference_' + model + '_' + dataset + '_d512_m' + str(
+                                                m) + '_s' + str(s) + '_' + l + '_' + str(date)
+                                            outfile_name = filename
+                                            infile_name = filename + '_vectors.pbz2'
 
-                                output_files.append(outfile_name)
-                                input_files.append(infile_name)
-                                datasets.append(dataset)
-    return input_files, output_files, datasets
+                                            output_files.append(outfile_name)
+                                            input_files.append(infile_name)
+                                            datasets.append(dataset)
+                                            models.append(model)
+                                        else:
+                                            for num in range(1, 6):
+                                                filename = 'siamese_inference_' + model + '_' + dataset + '_d512_m' + str(
+                                                    m) + '_s' + str(s) + '_' + l + '_' + str(date) + str(num)
+                                                outfile_name = filename
+                                                infile_name = filename + '_vectors.pbz2'
+
+                                                output_files.append(outfile_name)
+                                                input_files.append(infile_name)
+                                                datasets.append(dataset)
+                                                models.append(model)
+
+                                else:
+                                    if dataset == 'ukbench':
+                                        for dict_name in loops['dict']:
+                                            filename = dataset + '_siamese_inference_' + model + '_' + dict_name + '_d512_m' + str(
+                                                m) + '_s' + str(s) + '_' + l
+                                            outfile_name = filename
+                                            infile_name = filename + '_vectors.pbz2'
+
+                                            output_files.append(outfile_name)
+                                            input_files.append(infile_name)
+                                            datasets.append(dataset)
+                                            models.append(model)
+                                    else:
+                                        filename = 'siamese_inference_' + model + '_' + dataset + '_d512_m' + str(
+                                            m) + '_s' + str(s) + '_' + l
+                                        outfile_name = filename
+                                        infile_name = filename + '_vectors.pbz2'
+
+                                        output_files.append(outfile_name)
+                                        input_files.append(infile_name)
+                                        datasets.append(dataset)
+                                        models.append(model)
+    return input_files, output_files, datasets, models
 
 
 if __name__ == '__main__':
@@ -401,14 +525,14 @@ if __name__ == '__main__':
     normed = True
 
     read_all = True
-    no_siamese = False
+    no_siamese = True
     skip_known = True
 
     model = 'siamese'
     analysis = 'new_params'
 
-    skip = 'imagenette'
-    skip_not = 'alexnet'
+    skip = ''
+    skip_not = 'cifar10'
 
     loop_s = [300, 500, 700, 1000, 1500, 2000, 5000]
     loop_m = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0]
@@ -417,10 +541,11 @@ if __name__ == '__main__':
     loop_model = ['alexnet', 'efficientnet', 'vit', 'vgg16', 'resnet', 'mobilenet']
     loop_data = ['imagenette', 'cifar10', 'ukbench']
 
-    loops = {'s': [500], 'm': [2.0], 'l': ['contrastive'], 'model': ['vgg16'],
-             'dataset': ['cifar10'], 'dict': loop_data}
+    loops = {'s': [500], 'm': [1.0], 'l': ['contrastive'], 'model': loop_model,
+             'dataset': ['ukbench', 'imagenette', 'cifar10'], 'dict': ['imagenette', 'cifar10']}
 
     add_dataset = False
+    add_model = False
     metric = faiss.METRIC_L2
     normtime = 0
     indexstring = 'Flat'
@@ -442,24 +567,45 @@ if __name__ == '__main__':
     elif analysis == 'new_params':
         input_folder = "/home/astappiev/nsir/vectors/"
         output_folder += analysis
+        add_model = True
     else:
         input_folder = "/home/astappiev/nsir/backup/vectors/"
         add_dataset = True
 
-    input_files, output_files, datasets = get_file_names(read_all, input_folder, loops, analysis, skip, skip_not,
-                                                         no_siamese)
+    print('Fetching all files...')
+
+    input_files, output_files, datasets, models = get_file_names(read_all, input_folder, loops, analysis, skip,
+                                                                 skip_not, no_siamese)
 
     num_files = len(input_files)
+    print('Number of files to analyse: ', num_files)
     full_runtime = 0
     runtime_per_file = 0
+    file_counter = 0
     for i, filename in enumerate(input_files):
-        print('Now analysing file:', filename)
-        if i > 0:
-            print('Last file run {:.2f}'.format(runtime_per_file))
-            print('Estimated left runtime: {:.2f}'.format(full_runtime / i * (num_files - i)))
+        if add_dataset:
+            fin_output_folder = output_folder + datasets[i] + '/'
+        elif add_model:
+            fin_output_folder = output_folder + '/' + models[i] + '/'
+        else:
+            fin_output_folder = output_folder + '/'
 
+        print(fin_output_folder, filename)
+        output_filename = output_files[i] + '_' + 'Range_new' + '.csv'
+        if skip_known:
+            if output_filename in os.listdir(fin_output_folder):
+                print('skipping: ', output_filename)
+                continue
+        print('Now analysing file:', filename)
+
+        print('File ' + str(i + 1) + '/' + str(num_files))
+        if file_counter > 0:
+            print('Last file run {:.2f}'.format(runtime_per_file))
+            print('Estimated left runtime: {:.2f}'.format(full_runtime / file_counter * (num_files - i)))
+
+        file_counter += 1
         runtime_per_file = time.perf_counter()
-        print(datasets[i])
+
         if datasets[i] == 'ukbench':
             ukbench = True
         else:
@@ -467,9 +613,9 @@ if __name__ == '__main__':
 
         if model == 'SIFT':
             index_values, index_names, index_labels = load_embeddings_pbz2(input_folder + filename + '_index.pbz2',
-                                                                           model=model)
+                                                                           method=model)
             query_values, query_names, query_labels = load_embeddings_pbz2(input_folder + filename + '_query.pbz2',
-                                                                           model=model)
+                                                                           method=model)
             if normed:
                 index_values, normtime_i = norm(index_values)
                 query_values, normtime_q = norm(query_values)
@@ -494,25 +640,19 @@ if __name__ == '__main__':
             all_matches += index_counter[label] * query_counter[label]
 
         data_table = []
-        data_table = findNN(index_values, query_values, index_labels, query_labels, indexstring, 0.9, all_matches,
-                            data_table, normtime, ukbench=ukbench)
+        # data_table = findNN(index_values, query_values, index_labels, query_labels, indexstring, 0.9, all_matches, data_table, normtime, ukbench=ukbench)
 
-        for nn in np.linspace(0.2, 2.6, 16):
-            index, indextime = createIndex(index_values, indexstring, metric)
-            lim, D, I, searchtime = search(query_values, index, nn)
-            data_table = NN_analysis(index_labels, query_labels, I, lim, data_table, normtime + indextime + searchtime,
-                                     nn, ukbench=ukbench)
+        i_c = len(index_labels)
+        i_c_5 = int(i_c / 5)
+        m_c = int(sum(index_counter.values()) / len(index_counter.keys()))
 
-        df = pd.DataFrame(data=data_table,
-                          columns=['Range', 'true matches', 'GT', 'index_entries', 'query_entries', 'Recall',
-                                   'Precision', 'MAP', 'NDCG', 'Jaccard', 'Accelleration', 'F1', 'runtime'])
-        print(df)
+        index, indextime = createIndex(index_values, indexstring, metric)
+        for nn in [i_c]:
+            D, I, searchtime = search(query_values, index, nn)
+            data_table = NN_analysis(index_labels, query_labels, I, D, data_table, normtime + indextime + searchtime,
+                                     ukbench=ukbench)
 
-        if add_dataset:
-            fin_output_folder = output_folder + datasets[i] + '/'
-        else:
-            fin_output_folder = output_folder + '/'
-        df.to_csv(fin_output_folder + output_files[i] + '_' + indexstring + '_Range.csv', index=False)
+        data_table.to_csv(fin_output_folder + output_filename, index=False)
 
         runtime_per_file = time.perf_counter() - runtime_per_file
         full_runtime += runtime_per_file
