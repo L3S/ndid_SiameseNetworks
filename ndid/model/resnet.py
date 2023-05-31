@@ -8,33 +8,30 @@ BATCH_SIZE = 32
 TARGET_SHAPE = (224, 224)
 
 PRETRAIN_EPOCHS = 20
-EMBEDDING_VECTOR_DIMENSION = 4096
+EMBEDDING_VECTOR_DIMENSION = 2048
 
 
 class ResNetModel(Model):
-    def __init__(self, input_shape=TARGET_SHAPE, weights="imagenet", train_size=None, **kwargs):
+    def __init__(self, input_shape=TARGET_SHAPE, classes=10, weights="imagenet", train_size=None, **kwargs):
         if weights == "imagenet":
             core = tf.keras.applications.resnet_v2.ResNet50V2(
                 include_top=False,
                 input_shape=TARGET_SHAPE + (3,),
                 weights="imagenet",
-                # pooling="avg",
             )
             core.trainable = False
 
             model = Sequential([
                 core,
-                layers.Flatten(),
-                layers.Dense(4096, activation='relu'),
-                layers.Dense(4096, activation='relu'),
-                layers.Dense(10, activation='softmax')
+                layers.GlobalAveragePooling2D(name="avg_pool"),
+                layers.Dense(classes, activation='softmax', name="predictions"),
             ])
         else:
             model = tf.keras.applications.resnet_v2.ResNet50V2(
                 include_top=True,
                 input_shape=input_shape + (3,),
                 weights=None,
-                classes=10,
+                classes=classes,
                 **kwargs
             )
 
@@ -71,6 +68,5 @@ class ResNetModel(Model):
     @staticmethod
     def preprocess_input(image, label):
         image = tf.cast(image, tf.float32)
-        image = tf.image.resize(image, TARGET_SHAPE, method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
         image = tf.keras.applications.resnet_v2.preprocess_input(image)
         return image, label

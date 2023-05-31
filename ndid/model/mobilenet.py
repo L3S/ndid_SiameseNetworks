@@ -8,25 +8,35 @@ BATCH_SIZE = 32
 TARGET_SHAPE = (224, 224)
 
 PRETRAIN_EPOCHS = 20
-EMBEDDING_VECTOR_DIMENSION = 1024
+EMBEDDING_VECTOR_DIMENSION = 1280
 
 
 class MobileNetModel(Model):
-    def __init__(self, train_size=None, **kwargs):
-        core = tf.keras.applications.MobileNet(
-            include_top=False,
-            input_shape=TARGET_SHAPE + (3,)
-        )
+    def __init__(self, input_shape=TARGET_SHAPE, classes=10, weights="imagenet", train_size=None, **kwargs):
+        if weights == "imagenet":
+            core = tf.keras.applications.MobileNetV2(
+                include_top=False,
+                input_shape=input_shape + (3,),
+                weights="imagenet",
+            )
 
-        x = core.output
-        x = layers.GlobalAveragePooling2D(keepdims=True)(x)
-        x = layers.Dropout(1e-3, name='dropout')(x)
-        x = layers.Conv2D(10, (1, 1), padding='same', name='conv_preds')(x)
-        x = layers.Reshape((10,), name='reshape_2')(x)
-        x = layers.Activation(activation='softmax', name='predictions')(x)
+            core.trainable = False
 
-        x = tf.keras.applications.mobilenet.preprocess_input(x)
-        super(MobileNetModel, self).__init__(inputs=core.input, outputs=x, name='mobilenet')
+            model = Sequential([
+                core,
+                layers.GlobalAveragePooling2D(),
+                layers.Dense(classes, activation='softmax', name="predictions"),
+            ])
+        else:
+            model = tf.keras.applications.MobileNetV2(
+                include_top=True,
+                input_shape=input_shape + (3,),
+                weights=None,
+                classes=classes,
+                **kwargs
+            )
+
+        super(MobileNetModel, self).__init__(inputs=model.input, outputs=model.output, name='mobilenet')
         self.train_size = train_size
 
     def compile(self,
@@ -47,8 +57,7 @@ class MobileNetModel(Model):
         return super().fit(x=x, y=y, batch_size=batch_size, epochs=epochs, callbacks=callbacks, **kwargs)
 
     def get_embedding_model(self):
-        core = Model(inputs=self.input, outputs=self.layers[-7].output)
-        core = Sequential([core, layers.Flatten()], name=self.name + '_emb')
+        core = Model(inputs=self.input, outputs=self.layers[-2].output)
         for layer in core.layers:
             layer.trainable = False
         return core
@@ -60,6 +69,5 @@ class MobileNetModel(Model):
     @staticmethod
     def preprocess_input(image, label):
         image = tf.cast(image, tf.float32)
-        image = tf.image.resize(image, TARGET_SHAPE, method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-        image = tf.keras.applications.mobilenet.preprocess_input(image)
+        image = tf.keras.applications.mobilenet_v2.preprocess_input(image)
         return image, label

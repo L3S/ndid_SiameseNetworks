@@ -12,29 +12,34 @@ EMBEDDING_VECTOR_DIMENSION = 1280
 
 
 class EfficientNetModel(Model):
-    def __init__(self, input_shape=TARGET_SHAPE, weights="imagenet", train_size=None, **kwargs):
+    def __init__(self, input_shape=TARGET_SHAPE, classes=10, weights="imagenet", train_size=None, **kwargs):
         if weights == "imagenet":
             core = tf.keras.applications.EfficientNetV2S(
                 include_top=False,
                 input_shape=input_shape + (3,),
                 weights="imagenet",
-                # pooling="avg",
             )
             core.trainable = False
 
             model = Sequential([
                 core,
-                layers.Flatten(),
-                layers.Dense(4096, activation='relu'),
-                layers.Dense(4096, activation='relu'),
-                layers.Dense(10, activation='softmax')
+                layers.GlobalAveragePooling2D(name="avg_pool"),
+                layers.Dropout(0.2, name="top_dropout"),
+                layers.Dense(classes, activation='softmax', kernel_initializer={
+                    "class_name": "VarianceScaling",
+                    "config": {
+                        "scale": 1.0 / 3.0,
+                        "mode": "fan_out",
+                        "distribution": "uniform",
+                    },
+                }, bias_initializer=tf.constant_initializer(0), name="predictions"),
             ])
         else:
             model = tf.keras.applications.EfficientNetV2S(
                 include_top=True,
                 input_shape=input_shape + (3,),
                 weights=None,
-                classes=10,
+                classes=classes,
                 **kwargs
             )
 

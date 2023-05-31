@@ -4,6 +4,7 @@
 #SBATCH --nodes=1                   # Number of nodes to request
 #SBATCH --cpus-per-task=16          # Number of CPUs to request
 #SBATCH --gpus=2                    # Number of GPUs to request
+#SBATCH --mem=16G                   # Amount of RAM memory requested
 
 source /opt/conda/etc/profile.d/conda.sh
 conda activate tf
