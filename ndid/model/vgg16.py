@@ -16,7 +16,7 @@ class VGG16Model(Model):
         if weights == "imagenet":
             core = tf.keras.applications.VGG16(
                 include_top=False,
-                input_shape=TARGET_SHAPE + (3,),
+                input_shape=input_shape + (3,),
                 weights="imagenet",
             )
             core.trainable = False

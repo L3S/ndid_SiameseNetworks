@@ -16,7 +16,7 @@ class ResNetModel(Model):
         if weights == "imagenet":
             core = tf.keras.applications.resnet_v2.ResNet50V2(
                 include_top=False,
-                input_shape=TARGET_SHAPE + (3,),
+                input_shape=input_shape + (3,),
                 weights="imagenet",
             )
             core.trainable = False

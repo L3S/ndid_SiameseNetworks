@@ -1,6 +1,8 @@
 import time
 import logging as log
 import tensorflow as tf
+
+from nnfaiss import knn_search, range_search
 from ndid import SimpleParams
 from ndid.data.ukbench import UKBench
 from ndid.utils.common import get_modeldir, get_datadir
@@ -52,20 +54,28 @@ else:
         emb_model = params.get_model()
         print("Model loaded with Imagenet weights.")
 
-    # projection_vectors, projection_labels = calc_vectors(dataset.get_combined(), emb_model)
-    # if params.save_vectors:
-    #     save_embeddings(projection_vectors, projection_labels, model_basename + '_vectors')
-    # if params.project_vectors:
-    #     project_embeddings(projection_vectors, projection_labels, model_basename)
-    #
-    # if params.ukbench:
-    #     print('Computing UKBench vectors...')
-    #     ukbench_vectors, ukbench_labels = calc_vectors(ukbench.get_combined(), emb_model)
-    #     if params.save_vectors:
-    #         save_embeddings(ukbench_vectors, ukbench_labels, 'ukbench_' + model_basename + '_vectors')
-    #     if params.project_vectors:
-    #         project_embeddings(ukbench_vectors, ukbench_labels, 'ukbench_' + model_basename)
+    if params.cnn_vectors:
+        projection_vectors, projection_labels = calc_vectors(dataset.get_combined(), emb_model)
+        if params.save_vectors:
+            save_embeddings(projection_vectors, projection_labels, model_basename + '_vectors')
+        if params.compute_stats:
+            knn_search.compute_and_save(projection_vectors, projection_labels, model_basename + '_knn')
+            range_search.compute_and_save(projection_vectors, projection_labels, model_basename + '_range')
+        if params.project_vectors:
+            project_embeddings(projection_vectors, projection_labels, model_basename)
 
+        if params.ukbench:
+            print('Computing UKBench vectors...')
+            ukbench_vectors, ukbench_labels = calc_vectors(ukbench.get_combined(), emb_model)
+            if params.save_vectors:
+                save_embeddings(ukbench_vectors, ukbench_labels, 'ukbench_' + model_basename + '_vectors')
+            if params.compute_stats:
+                knn_search.compute_and_save(projection_vectors, projection_labels, 'ukbench_' + model_basename + '_knn', True)
+                range_search.compute_and_save(projection_vectors, projection_labels, 'ukbench_' + model_basename + '_range', True)
+            if params.project_vectors:
+                project_embeddings(ukbench_vectors, ukbench_labels, 'ukbench_' + model_basename)
+
+    emb_model.summary()
     embeddings_file = get_datadir(emb_model.name + '_' + dataset.name + '_' + params.seed)
     if embeddings_file.exists():
         emb_vectors, emb_labels = load_vectors(embeddings_file)
@@ -78,10 +88,9 @@ else:
     siamese = params.get_siamese_class()(embedding_model=emb_model, image_vector_dimensions=params.dimensions,
                                          loss_margin=params.margin, fit_epochs=params.epochs, basename=params.basename)
     siamese.compile(loss=params.get_loss_class())
-
-    print('Training siamese...')
-    start = time.time()
     siamese.summary()
+
+    start = time.time()
     siamese.fit(emb_ds, num_classes=dataset.num_classes)
     log.info('Siamese model %s trained in %ss', params.basename, time.time() - start)
     siamese.inference_model.save(inference_model_file)
@@ -92,6 +101,11 @@ projection_vectors, projection_labels = calc_vectors(dataset.get_combined(), inf
 log.info('Siamese embs %s calculated in %ss', inference_model.name, time.time() - start)
 if params.save_vectors:
     save_embeddings(projection_vectors, projection_labels, inference_model.name + '_vectors')
+
+if params.compute_stats:
+    knn_search.compute_and_save(projection_vectors, projection_labels, inference_model.name + '_knn')
+    range_search.compute_and_save(projection_vectors, projection_labels, inference_model.name + '_range')
+
 if params.project_vectors:
     project_embeddings(projection_vectors, projection_labels, inference_model.name)
 
@@ -100,6 +114,11 @@ if params.ukbench:
     ukbench_vectors, ukbench_labels = calc_vectors(ukbench.get_combined(), inference_model)
     if params.save_vectors:
         save_embeddings(ukbench_vectors, ukbench_labels, 'ukbench_' + inference_model.name + '_vectors')
+
+    if params.compute_stats:
+        knn_search.compute_and_save(projection_vectors, projection_labels, 'ukbench_' + inference_model.name + '_knn', True)
+        range_search.compute_and_save(projection_vectors, projection_labels, 'ukbench_' + inference_model.name + '_range', True)
+
     if params.project_vectors:
         project_embeddings(ukbench_vectors, ukbench_labels, 'ukbench_' + inference_model.name)
 

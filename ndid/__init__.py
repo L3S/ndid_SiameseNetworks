@@ -30,7 +30,9 @@ parser.add_argument("--epochs", "-e", help="Number of epochs, each epoch consist
 # other params
 parser.add_argument("--seed", "-s", help="Set seed value", default="", type=str)
 parser.add_argument("--ukbench", help="Compute UKBench vectors", default=True, type=bool)
+parser.add_argument("--cnn-vectors", help="Save CNN's embeddings", default=False, type=bool)
 parser.add_argument("--save-vectors", help="Save embeddings", default=True, type=bool)
+parser.add_argument("--compute-stats", help="Compute FAISS statistical analysis", default=True, type=bool)
 parser.add_argument("--project-vectors", help="Project embeddings", default=False, type=bool)
 
 
@@ -39,9 +41,9 @@ class SimpleParams:
     def parse(cls):
         args = parser.parse_args()
         print('Params received: {}'.format(args))
-        return cls(args.dataset, args.model, args.loss, args.margin, args.dimensions, args.epochs, args.seed, args.ukbench, args.save_vectors, args.project_vectors)
+        return cls(args.dataset, args.model, args.loss, args.margin, args.dimensions, args.epochs, args.seed, args.ukbench, args.cnn_vectors, args.save_vectors, args.project_vectors, args.compute_stats)
 
-    def __init__(self, dataset, model, loss, margin, dimensions, epochs, seed, ukbench, save_vectors, project_vectors):
+    def __init__(self, dataset, model, loss, margin, dimensions, epochs, seed, ukbench, cnn_vectors, save_vectors, project_vectors, compute_stats):
         self.dataset = dataset
         self.model = model
 
@@ -51,8 +53,10 @@ class SimpleParams:
         self.epochs = epochs
 
         self.ukbench = ukbench
+        self.cnn_vectors = cnn_vectors
         self.save_vectors = save_vectors
         self.project_vectors = project_vectors
+        self.compute_stats = compute_stats
 
         self.basename = model + '_' + dataset + '_d' + str(dimensions) + '_m' + str(margin) + '_s' + str(epochs * 100) + '_' + loss
 
