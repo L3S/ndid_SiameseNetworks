@@ -4,6 +4,7 @@ __pycache__
 
 # non-persistend data
 /backup
+/faiss
 /data
 /datasets
 /models

@@ -8,6 +8,8 @@ import pickle
 import pandas as pd
 import os
 
+from ndid.utils.common import get_faissdir
+
 
 def load_embeddings_pkl(name='embeddings'):
     with open(name, 'rb') as infile:
@@ -447,6 +449,14 @@ def get_file_names(read_all, input_folder, loops={}, analysis='params', skip='',
                                         datasets.append(dataset)
                                         models.append(model)
     return input_files, output_files, datasets, models
+
+
+def compute_and_save(values, labels, name='embeddings'):
+    index_values, index_labels, query_values, query_labels = split_index_query_last(values, labels, 0.2, normed=True)
+    index, indextime = createIndex(index_values, 'Flat', faiss.METRIC_L2)
+    D, I, searchtime = search(query_values, index, len(index_labels))
+    data_table = NN_analysis(index_labels, query_labels, I, D, [], indextime + searchtime, ukbench=False)
+    data_table.to_csv(str(get_faissdir(name)) + '.csv', index=False)
 
 
 if __name__ == '__main__':
