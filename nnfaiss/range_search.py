@@ -533,6 +533,12 @@ def compute_and_save(values, labels, name='embeddings', ukbench=False):
     data_table = NN_analysis(index_labels, query_labels, I, D, [], indextime + searchtime, ukbench=ukbench)
     data_table.to_csv(str(get_faissdir(name)) + '.csv', index=False)
 
+    if ukbench:
+        I_labels = index_labels[I]
+        f = open(str(get_faissdir(name)) + '_IDs.txt', 'w')
+        for i in range(10):
+            print(*[query_labels[i], I_labels[i,:5]], sep = '\t', file=f)
+
 
 if __name__ == '__main__':
 

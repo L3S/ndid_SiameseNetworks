@@ -70,8 +70,8 @@ else:
             if params.save_vectors:
                 save_embeddings(ukbench_vectors, ukbench_labels, 'ukbench_' + model_basename + '_vectors')
             if params.compute_stats:
-                knn_search.compute_and_save(projection_vectors, projection_labels, 'ukbench_' + model_basename + '_knn', True)
-                range_search.compute_and_save(projection_vectors, projection_labels, 'ukbench_' + model_basename + '_range', True)
+                knn_search.compute_and_save(ukbench_vectors, ukbench_labels, 'ukbench_' + model_basename + '_knn', True)
+                range_search.compute_and_save(ukbench_vectors, ukbench_labels, 'ukbench_' + model_basename + '_range', True)
             if params.project_vectors:
                 project_embeddings(ukbench_vectors, ukbench_labels, 'ukbench_' + model_basename)
 
@@ -116,8 +116,8 @@ if params.ukbench:
         save_embeddings(ukbench_vectors, ukbench_labels, 'ukbench_' + inference_model.name + '_vectors')
 
     if params.compute_stats:
-        knn_search.compute_and_save(projection_vectors, projection_labels, 'ukbench_' + inference_model.name + '_knn', True)
-        range_search.compute_and_save(projection_vectors, projection_labels, 'ukbench_' + inference_model.name + '_range', True)
+        knn_search.compute_and_save(ukbench_vectors, ukbench_labels, 'ukbench_' + inference_model.name + '_knn', True)
+        range_search.compute_and_save(ukbench_vectors, ukbench_labels, 'ukbench_' + inference_model.name + '_range', True)
 
     if params.project_vectors:
         project_embeddings(ukbench_vectors, ukbench_labels, 'ukbench_' + inference_model.name)

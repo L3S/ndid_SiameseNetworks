@@ -6,10 +6,18 @@ DEFAULT_BATCH_SIZE = 32
 
 
 class AsbDataset(ABC):
-    def __init__(self, name: str, classes: List[str], image_size: Tuple[int, int], batch_size: int = None, map_fn: Callable = None):
+    def __init__(self,
+                 name: str,
+                 classes: List[str] = None,
+                 image_size: Tuple[int, int] = None,
+                 num_classes: int = None,
+                 batch_size: int = None,
+                 map_fn: Callable = None):
         self.name = name
         self.classes = classes
-        self.num_classes = len(classes)
+        self.num_classes = num_classes
+        if classes is not None:
+            self.num_classes = len(classes)
         self._image_size = image_size
         self._batch_size = batch_size
         self._map_fn = map_fn
@@ -22,7 +30,7 @@ class AsbDataset(ABC):
         return self.classes
 
     def get_num_classes(self):
-        return len(self.classes)
+        return self.num_classes
 
     def get_train(self):
         if self._train_ds is None:

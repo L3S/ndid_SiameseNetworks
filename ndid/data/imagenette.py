@@ -12,7 +12,7 @@ class Imagenette(AsbDataset):
         super(Imagenette, self).__init__(name='imagenette', classes=CLASS_NAMES, image_size=image_size, batch_size=batch_size, map_fn=map_fn)
 
     def _load_dataset(self, image_size, batch_size, map_fn):
-        train_ds = tf.keras.utils.image_dataset_from_directory(
+        train_ods = tf.keras.utils.image_dataset_from_directory(
             directory=get_dataset('imagenette2/train'),
             labels='inferred',
             label_mode='int',
@@ -21,7 +21,7 @@ class Imagenette(AsbDataset):
             interpolation='nearest'
         )
 
-        test_ds = tf.keras.utils.image_dataset_from_directory(
+        test_ods = tf.keras.utils.image_dataset_from_directory(
             directory=get_dataset('imagenette2/val'),
             labels='inferred',
             label_mode='int',
@@ -31,10 +31,10 @@ class Imagenette(AsbDataset):
         )
 
         if map_fn is not None:
-            train_ds = train_ds.map(map_fn).prefetch(tf.data.AUTOTUNE)
-            test_ds = test_ds.map(map_fn).prefetch(tf.data.AUTOTUNE)
+            train_ods = train_ods.map(map_fn).prefetch(tf.data.AUTOTUNE)
+            test_ods = test_ods.map(map_fn).prefetch(tf.data.AUTOTUNE)
 
-        test_ds_size = test_ds.cardinality().numpy()
-        test_ds = test_ds.take(test_ds_size / 2)
-        val_ds = test_ds.skip(test_ds_size / 2)
-        return train_ds, val_ds, test_ds
+        test_ods_size = test_ods.cardinality().numpy()
+        val_ds = test_ods.skip(test_ods_size / 2)
+        test_ds = test_ods.take(test_ods_size / 2)
+        return train_ods, val_ds, test_ds
