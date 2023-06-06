@@ -1,10 +1,9 @@
 import time
 import argparse
-import tensorflow_addons as tfa
 from ndid.data.simple3 import Simple3
 from ndid.data.imagenette import Imagenette
 from ndid.data.cifar10 import Cifar10
-from ndid.loss.offline_triplet import OfflineTripletLoss
+from ndid.loss import ContrastiveLoss, TripletEasyLoss, TripletSemiHardLoss, TripletHardLoss
 from ndid.model.siamese import SiameseModel
 from ndid.model.siamese_offlinetriplet import SiameseOfflineTripletModel
 from ndid.model.alexnet import AlexNetModel
@@ -99,13 +98,13 @@ class SimpleParams:
 
     def get_loss_class(self):
         if self.loss == "contrastive":
-            cls = tfa.losses.ContrastiveLoss
+            cls = ContrastiveLoss
         elif self.loss == "easy-triplet":
-            cls = OfflineTripletLoss
+            cls = TripletEasyLoss
         elif self.loss == "semi-hard-triplet":
-            cls = tfa.losses.TripletSemiHardLoss
+            cls = TripletSemiHardLoss
         elif self.loss == "hard-triplet":
-            cls = tfa.losses.TripletHardLoss
+            cls = TripletHardLoss
         else:
             raise ValueError("Loss not found")
         return cls

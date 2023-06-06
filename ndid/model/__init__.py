@@ -3,8 +3,6 @@ from abc import ABC, abstractmethod
 
 
 class AsbModel(ABC, Model):
-    def get_classes(self):
-        return self.classes
 
     @staticmethod
     @abstractmethod

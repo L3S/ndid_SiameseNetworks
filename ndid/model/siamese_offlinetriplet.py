@@ -2,7 +2,7 @@ from ndid.utils.common import *
 from ndid.utils.tuple import produce_tuples
 from ndid.utils.distance import cosine_distance, euclidean_distance
 from tensorflow.keras import layers, callbacks, Model
-from ndid.loss.offline_triplet import OfflineTripletLoss
+from ndid.loss.triplet_easy import TripletEasyLoss
 
 tensorboard_cb = callbacks.TensorBoard(get_logdir('siamese/fit'), histogram_freq=1)
 
@@ -60,7 +60,7 @@ class SiameseOfflineTripletModel(Model):
         self.projection_model = projection_model
         self.inference_model = inference_model
 
-    def compile(self, loss=OfflineTripletLoss, loss_margin=None, optimizer=tf.keras.optimizers.RMSprop(), **kwargs):
+    def compile(self, loss=TripletEasyLoss, loss_margin=None, optimizer=tf.keras.optimizers.RMSprop(), **kwargs):
 
         if loss_margin is None:
             loss_margin = self.loss_margin
