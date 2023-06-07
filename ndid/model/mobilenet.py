@@ -12,7 +12,7 @@ EMBEDDING_VECTOR_DIMENSION = 1280
 
 
 class MobileNetModel(Model):
-    def __init__(self, input_shape=TARGET_SHAPE, classes=10, weights="imagenet", train_size=None, **kwargs):
+    def __init__(self, input_shape=TARGET_SHAPE, num_classes=10, weights="imagenet", train_size=None, **kwargs):
         if weights == "imagenet":
             core = tf.keras.applications.MobileNetV2(
                 include_top=False,
@@ -25,14 +25,14 @@ class MobileNetModel(Model):
             model = Sequential([
                 core,
                 layers.GlobalAveragePooling2D(),
-                layers.Dense(classes, activation='softmax', name="predictions"),
+                layers.Dense(num_classes, activation='softmax', name="predictions"),
             ])
         else:
             model = tf.keras.applications.MobileNetV2(
                 include_top=True,
                 input_shape=input_shape + (3,),
                 weights=None,
-                classes=classes,
+                classes=num_classes,
                 **kwargs
             )
 

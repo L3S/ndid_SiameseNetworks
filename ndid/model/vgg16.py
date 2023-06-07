@@ -12,7 +12,7 @@ EMBEDDING_VECTOR_DIMENSION = 4096
 
 
 class VGG16Model(Model):
-    def __init__(self, input_shape=TARGET_SHAPE, classes=10, weights="imagenet", train_size=None, **kwargs):
+    def __init__(self, input_shape=TARGET_SHAPE, num_classes=10, weights="imagenet", train_size=None, **kwargs):
         if weights == "imagenet":
             core = tf.keras.applications.VGG16(
                 include_top=False,
@@ -26,14 +26,14 @@ class VGG16Model(Model):
                 layers.Flatten(name="flatten"),
                 layers.Dense(4096, activation='relu', name="fc1"),
                 layers.Dense(4096, activation='relu', name="fc2"),
-                layers.Dense(classes, activation='softmax', name="predictions")
+                layers.Dense(num_classes, activation='softmax', name="predictions")
             ])
         else:
             model = tf.keras.applications.VGG16(
                 include_top=True,
                 input_shape=input_shape + (3,),
                 weights=None,
-                classes=classes,
+                classes=num_classes,
                 **kwargs
             )
 

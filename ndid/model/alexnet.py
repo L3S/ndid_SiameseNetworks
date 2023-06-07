@@ -47,7 +47,7 @@ def create_alexnet_model(input_shape, num_classes):
 
 class AlexNetModel(Model):
 
-    def __init__(self, input_shape=TARGET_SHAPE, classes=10, weights="imagenet", train_size=None, **kwargs):
+    def __init__(self, input_shape=TARGET_SHAPE, num_classes=10, weights="imagenet", train_size=None, **kwargs):
         if weights == "imagenet":
             core = create_alexnet_model(
                 input_shape=input_shape + (3,),
@@ -63,13 +63,13 @@ class AlexNetModel(Model):
             model = Sequential([
                 core,
                 layers.Dropout(rate=0.5),
-                layers.Dense(name='predictions', units=classes, activation='softmax'),
+                layers.Dense(name='predictions', units=num_classes, activation='softmax'),
             ])
             model.summary()
         else:
             model = create_alexnet_model(
                 input_shape=input_shape + (3,),
-                num_classes=classes,
+                num_classes=num_classes,
             )
 
         super(AlexNetModel, self).__init__(inputs=model.input, outputs=model.output, name='alexnet')
