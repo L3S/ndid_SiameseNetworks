@@ -4,7 +4,7 @@ from ndid.data.imagenette import Imagenette
 from ndid.data.ukbench import UKBench
 from ndid.utils.embeddings import calc_vectors_fn, save_embeddings
 
-TARGET_SHAPE = (227, 227)
+TARGET_SHAPE = (224, 224)
 dataset_img = Imagenette(batch_size=None, image_size=TARGET_SHAPE)
 dataset_c10 = Cifar10(batch_size=None, image_size=TARGET_SHAPE)
 dataset_ukb = UKBench(batch_size=None, image_size=TARGET_SHAPE)

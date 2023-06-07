@@ -2,50 +2,77 @@ import tensorflow as tf
 from tensorflow.keras import layers, callbacks, Sequential, Model
 
 from ndid.model import AsbModel
-from ndid.utils.common import get_logdir
+from ndid.utils.common import get_logdir, get_weightsdir
 
 tensorboard_cb = callbacks.TensorBoard(get_logdir('alexnet/fit'))
 
 BATCH_SIZE = 32
-TARGET_SHAPE = (227, 227)
+TARGET_SHAPE = (224, 224)
 
 PRETRAIN_EPOCHS = 50
 EMBEDDING_VECTOR_DIMENSION = 4096
 
+def create_alexnet_model(input_shape, num_classes):
+    return Sequential([
+        layers.Conv2D(filters=96, kernel_size=(11, 11), strides=(4, 4), activation='relu', input_shape=input_shape),
+        layers.BatchNormalization(),
+        layers.MaxPool2D(pool_size=(3, 3), strides=(2, 2)),
 
-class AlexNetModel(Sequential, AsbModel):
+        layers.Conv2D(filters=256, kernel_size=(5, 5), strides=(1, 1), activation='relu', padding='same'),
+        layers.BatchNormalization(),
+        layers.MaxPool2D(pool_size=(3, 3), strides=(2, 2)),
 
-    def __init__(self, classes=10, train_size=None):
-        super(AlexNetModel, self).__init__([
-            layers.Conv2D(filters=96, kernel_size=(11, 11), strides=(4, 4), activation='relu', input_shape=TARGET_SHAPE + (3,)),
-            layers.BatchNormalization(),
-            layers.MaxPool2D(pool_size=(3, 3), strides=(2, 2)),
+        layers.Conv2D(filters=384, kernel_size=(3, 3), strides=(1, 1), activation='relu', padding='same'),
+        layers.BatchNormalization(),
 
-            layers.Conv2D(filters=256, kernel_size=(5, 5), strides=(1, 1), activation='relu', padding='same'),
-            layers.BatchNormalization(),
-            layers.MaxPool2D(pool_size=(3, 3), strides=(2, 2)),
+        layers.Conv2D(filters=384, kernel_size=(3, 3), strides=(1, 1), activation='relu', padding='same'),
+        layers.BatchNormalization(),
 
-            layers.Conv2D(filters=384, kernel_size=(3, 3), strides=(1, 1), activation='relu', padding='same'),
-            layers.BatchNormalization(),
+        layers.Conv2D(filters=256, kernel_size=(3, 3), strides=(1, 1), activation='relu', padding='same'),
+        layers.BatchNormalization(),
 
-            layers.Conv2D(filters=384, kernel_size=(3, 3), strides=(1, 1), activation='relu', padding='same'),
-            layers.BatchNormalization(),
+        layers.MaxPool2D(pool_size=(3, 3), strides=(2, 2)),
 
-            layers.Conv2D(filters=256, kernel_size=(3, 3), strides=(1, 1), activation='relu', padding='same'),
-            layers.BatchNormalization(),
+        layers.Flatten(),
 
-            layers.MaxPool2D(pool_size=(3, 3), strides=(2, 2)),
+        layers.Dense(4096, activation='relu'),
+        layers.Dropout(0.5),
 
-            layers.Flatten(),
+        layers.Dense(4096, activation='relu'),
+        layers.Dropout(rate=0.5),
 
-            layers.Dense(4096, activation='relu'),
-            layers.Dropout(0.5),
+        layers.Dense(name='predictions', units=num_classes, activation='softmax')
+    ])
 
-            layers.Dense(4096, activation='relu'),
-            layers.Dropout(rate=0.5),
 
-            layers.Dense(name='unfreeze', units=classes, activation='softmax')
-        ], name='alexnet')
+class AlexNetModel(Model):
+
+    def __init__(self, input_shape=TARGET_SHAPE, classes=10, weights="imagenet", train_size=None, **kwargs):
+        if weights == "imagenet":
+            core = create_alexnet_model(
+                input_shape=input_shape + (3,),
+                num_classes=1000,
+            )
+            core.load_weights(get_weightsdir('alexnet_imagenet'))
+            core.trainable = False
+            core.summary()
+
+            core = Model(inputs=core.input, outputs=core.layers[-2].output)
+            
+            core.summary()
+            model = Sequential([
+                core,
+                layers.Dropout(rate=0.5),
+                layers.Dense(name='predictions', units=classes, activation='softmax'),
+            ])
+            model.summary()
+        else:
+            model = create_alexnet_model(
+                input_shape=input_shape + (3,),
+                num_classes=classes,
+            )
+
+        super(AlexNetModel, self).__init__(inputs=model.input, outputs=model.output, name='alexnet')
 
     def compile(self,
                 optimizer=tf.optimizers.SGD(learning_rate=0.001),

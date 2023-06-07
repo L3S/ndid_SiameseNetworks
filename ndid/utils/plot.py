@@ -78,3 +78,21 @@ def plot_sift(image, keypoints):
 def calc_under_margin(vectors, margin=0.1):
     dm = distance_matrix(vectors, vectors)
     print('Under the margin', (dm < margin).sum() / 2)
+
+
+def visualizeTuple(anchor, positive, negative):
+    """Visualize a few triplets from the supplied batches."""
+
+    def show(ax, image):
+        ax.imshow(image)
+        ax.xaxis.set_visible(False)
+        ax.yaxis.set_visible(False)
+
+    fig = plt.figure(figsize=(9, 9))
+
+    axs = fig.subplots(3, 3)
+    for i in range(3):
+        show(axs[i, 0], anchor[0][i])
+        show(axs[i, 1], positive[0][i])
+        show(axs[i, 2], negative[0][i])
+    plt.show()

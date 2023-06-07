@@ -31,6 +31,10 @@ def get_modeldir(name):
     return Path(get_project_root(), "models", name)
 
 
+def get_weightsdir(name):
+    return Path(get_project_root(), "models/weights", name)
+
+
 def get_datadir(name):
     return Path(get_project_root(), "data", name)
 

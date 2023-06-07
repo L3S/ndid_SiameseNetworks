@@ -1,17 +1,4 @@
 import numpy as np
-import _pickle as pickle
-import matplotlib.pyplot as plt
-import tensorflow as tf
-from ndid.utils.common import get_datadir, resize_image, normalize_image
-
-target_shape = (227, 227)
-
-
-def process_images(image):
-    # Resize images from 32x32 to 277x277
-    image = resize_image(image, target_shape)
-    image = normalize_image(image)
-    return image
 
 
 def shuffle_arrays(arrays, set_seed=-1):
@@ -104,52 +91,3 @@ def produce_tuples(images, labels):
         ])
 
     return (anchor_images, anchor_labels), (positive_images, positive_labels), (negative_images, negative_labels)
-
-
-def save_tuples(anchor_images, anchor_labels, positive_images, positive_labels, negative_images, negative_labels):
-    data = [anchor_images, anchor_labels, positive_images, positive_labels, negative_images, negative_labels]
-
-    with open(get_datadir('cifar10_tuples.pkl'), 'wb') as outfile:
-        pickle.dump(data, outfile, -1)
-
-
-def load_tuples():
-    with open(get_datadir('cifar10_tuples.pkl'), 'rb') as infile:
-        result = pickle.load(infile)
-
-    return (result[0], result[1]), (result[2], result[3]), (result[4], result[5])
-
-
-def prepare_dataset():
-    (train_images, train_labels), (test_images, test_labels) = tf.keras.datasets.cifar10.load_data()
-    (anchor_images, anchor_labels), (positive_images, positive_labels), (negative_images, negative_labels) = produce_tuples(train_images + test_images, train_labels + test_labels)
-
-    anchor_ds = tf.data.Dataset.from_tensor_slices(anchor_images)
-    positive_ds = tf.data.Dataset.from_tensor_slices(positive_images)
-    negative_ds = tf.data.Dataset.from_tensor_slices(negative_images)
-
-    anchor_ds = (anchor_ds.map(process_images).batch(batch_size=32, drop_remainder=True))
-    positive_ds = (positive_ds.map(process_images).batch(batch_size=32, drop_remainder=True))
-    negative_ds = (negative_ds.map(process_images).batch(batch_size=32, drop_remainder=True))
-
-    dataset = tf.data.Dataset.zip((anchor_ds, positive_ds, negative_ds))
-    # dataset = dataset.shuffle(buffer_size=1024)
-    return dataset
-
-
-def visualize(anchor, positive, negative):
-    """Visualize a few triplets from the supplied batches."""
-
-    def show(ax, image):
-        ax.imshow(image)
-        ax.xaxis.set_visible(False)
-        ax.yaxis.set_visible(False)
-
-    fig = plt.figure(figsize=(9, 9))
-
-    axs = fig.subplots(3, 3)
-    for i in range(3):
-        show(axs[i, 0], anchor[0][i])
-        show(axs[i, 1], positive[0][i])
-        show(axs[i, 2], negative[0][i])
-    plt.show()
