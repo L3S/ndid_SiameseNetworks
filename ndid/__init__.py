@@ -18,20 +18,24 @@ parser.add_argument("--dataset", "-D", help="Dataset", default="simple3",
                     choices=["simple3", "cifar10", "imagenette"], type=str)
 parser.add_argument("--model", "-M", help="Model", default="alexnet",
                     choices=["alexnet", "efficientnet", "mobilenet", "resnet", "vgg16", "vit"], type=str)
+parser.add_argument("--weights", "-W", help="Weights", default="imagenet",
+                    choices=["imagenet", "imagenetplus", "dataset"], type=str)
 
 # model params
 parser.add_argument("--loss", "-l", help="Loss function", default="contrastive",
                     choices=["contrastive", "easy-triplet", "semi-hard-triplet", "hard-triplet"], type=str)
-parser.add_argument("--margin", "-m", help="Margin for the loss function", default=1.0, type=float)
+parser.add_argument("--margin", "-m", help="Margin for the loss function", default=1.5, type=float)
 parser.add_argument("--dimensions", "-d", help="The dimension of Siamese output", default=512, type=int)
-parser.add_argument("--epochs", "-e", help="Number of epochs, each epoch consists of 100 steps", default=5, type=int)
+parser.add_argument("--epochs", "-e", help="Number of epochs, each epoch consists of 100 steps", default=15, type=int)
 
 # other params
 parser.add_argument("--seed", "-s", help="Set seed value", default="", type=str)
-parser.add_argument("--ukbench", help="Compute UKBench vectors", default=True, type=bool)
+parser.add_argument("--ukbench", help="Compute UKBench vectors", default=False, type=bool)
+
+# what to save
 parser.add_argument("--cnn-vectors", help="Save CNN's embeddings", default=False, type=bool)
-parser.add_argument("--save-vectors", help="Save embeddings", default=True, type=bool)
-parser.add_argument("--compute-stats", help="Compute FAISS statistical analysis", default=True, type=bool)
+parser.add_argument("--save-vectors", help="Save embeddings", default=False, type=bool)
+parser.add_argument("--compute-stats", help="Compute FAISS statistical analysis", default=False, type=bool)
 parser.add_argument("--project-vectors", help="Project embeddings", default=False, type=bool)
 
 
@@ -40,25 +44,32 @@ class SimpleParams:
     def parse(cls):
         args = parser.parse_args()
         print('Params received: {}'.format(args))
-        return cls(args.dataset, args.model, args.loss, args.margin, args.dimensions, args.epochs, args.seed, args.ukbench, args.cnn_vectors, args.save_vectors, args.project_vectors, args.compute_stats)
+        return cls(args.dataset, args.model, args.weights,
+                   args.loss, args.margin, args.dimensions, args.epochs,
+                   args.seed, args.ukbench,
+                   args.cnn_vectors, args.save_vectors, args.project_vectors, args.compute_stats)
 
-    def __init__(self, dataset, model, loss, margin, dimensions, epochs, seed, ukbench, cnn_vectors, save_vectors, project_vectors, compute_stats):
+    def __init__(self, dataset, model, weights,
+                 loss, margin, dimensions, epochs,
+                 seed, ukbench,
+                 cnn_vectors, save_vectors, project_vectors, compute_stats):
         self.dataset = dataset
         self.model = model
+        self.weights = weights
 
         self.loss = loss
         self.margin = margin
         self.dimensions = dimensions
         self.epochs = epochs
 
-        self.ukbench = ukbench
         self.cnn_vectors = cnn_vectors
         self.save_vectors = save_vectors
         self.project_vectors = project_vectors
         self.compute_stats = compute_stats
 
-        self.basename = model + '_' + dataset + '_d' + str(dimensions) + '_m' + str(margin) + '_s' + str(epochs * 100) + '_' + loss
+        self.basename = model + '_' + dataset + '_' + weights + '_d' + str(dimensions) + '_m' + str(margin) + '_s' + str(epochs * 100) + '_' + loss
 
+        self.ukbench = ukbench
         if len(seed) > 0:
             self.seed = seed
         else:

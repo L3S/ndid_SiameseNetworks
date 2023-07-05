@@ -14,12 +14,18 @@ EMBEDDING_VECTOR_DIMENSION = 1280
 class MobileNetModel(Model):
     def __init__(self, input_shape=TARGET_SHAPE, num_classes=10, weights="imagenet", train_size=None, **kwargs):
         if weights == "imagenet":
+            model = tf.keras.applications.MobileNetV2(
+                include_top=True,
+                input_shape=input_shape + (3,),
+                weights="imagenet",
+            )
+            model.trainable = False
+        elif weights == "imagenetplus":
             core = tf.keras.applications.MobileNetV2(
                 include_top=False,
                 input_shape=input_shape + (3,),
                 weights="imagenet",
             )
-
             core.trainable = False
 
             model = Sequential([

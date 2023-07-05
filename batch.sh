@@ -5,23 +5,64 @@ trap "exit" INT
 
 model=alexnet
 dataset=cifar10
+weights=imagenet
 loss=contrastive
 margin=1
 epochs=5
 dimensions=512
 
-for i in {1..5}; do
-  for model in "alexnet"; do # "alexnet" "efficientnet" "mobilenet" "resnet" "vgg16" "vit"
+#sbatch --job-name "test-mobilenet" ./runner.sh "mobilenet" "imagenette" "contrastive" "1" "512" "5" "3105"
+
+#DIR_NAME="margin"
+#find ./faiss -maxdepth 1 -type f | xargs mv -t "./faiss/$DIR_NAME"
+
+# Params
+## margin
+# for i in {1..3}; do
+#   for model in "alexnet" "efficientnet" "mobilenet" "resnet" "vgg16" "vit"; do # "alexnet" "efficientnet" "mobilenet" "resnet" "vgg16" "vit"
+#     for dataset in "imagenette" "cifar10"; do
+#       for margin in "0.5" "0.75" "1" "1.25" "1.5" "1.75" "2"; do # "0.5" "0.75" "1" "1.25" "1.5" "1.75" "2"
+#         sbatch --job-name "nsir-$model-$dataset-$loss-$margin-$dimensions-$epochs-$i" ./runner.sh "$model" "$dataset" "$weights" "$loss" "$margin" "$dimensions" "$epochs" "hpm$i"
+#       done
+#     done
+#   done
+# done
+
+## epochs
+# for i in {1..2}; do
+#   for model in "alexnet" "efficientnet" "mobilenet" "resnet" "vgg16" "vit"; do # "alexnet" "efficientnet" "mobilenet" "resnet" "vgg16" "vit"
+#     for dataset in "imagenette" "cifar10"; do
+#       for epochs in "50"; do #  "50"
+#         sbatch --job-name "nsir-$model-$dataset-$loss-$margin-$dimensions-$epochs-$i" ./runner.sh "$model" "$dataset" "$weights" "$loss" "$margin" "$dimensions" "$epochs" "hpe$i"
+#       done
+#     done
+#   done
+# done
+
+## loss
+# for i in {1..3}; do
+#   for model in "alexnet" "efficientnet" "mobilenet" "resnet" "vgg16" "vit"; do # "alexnet" "efficientnet" "mobilenet" "resnet" "vgg16" "vit"
+#     for dataset in "imagenette" "cifar10"; do
+#       for loss in "contrastive" "easy-triplet" "semi-hard-triplet" "hard-triplet"; do
+#         sbatch --job-name "nsir-$model-$dataset-$loss-$margin-$dimensions-$epochs-$i" ./runner.sh "$model" "$dataset" "$weights" "$loss" "$margin" "$dimensions" "$epochs" "hpl$i"
+#       done
+#     done
+#   done
+# done
+
+# UKBench
+# weights=imagenetplus
+for i in {1..3}; do
+  for model in "alexnet" "efficientnet" "mobilenet" "resnet" "vgg16" "vit"; do
     for dataset in "imagenette" "cifar10"; do
-      for loss in "contrastive"; do # "contrastive" "easy-triplet" "semi-hard-triplet" "hard-triplet"
-        for margin in "1"; do # "0.5" "0.75" "1" "1.25" "1.5" "1.75" "2"
-          for epochs in 5 10; do
-            for dimensions in 512; do
-              sbatch --job-name "nsir-$model-$dataset-$loss-$margin-$dimensions-$epochs-$i" ./runner.sh "$model" "$dataset" "$loss" "$margin" "$dimensions" "$epochs" "2604$i"
-            done
-          done
-        done
-      done
+      sbatch --job-name "nsir-$model-$dataset-$i" ./runner2.sh "$model" "$dataset" "final$i"
     done
   done
 done
+
+# Projection
+# for model in "alexnet" "efficientnet" "mobilenet" "resnet" "vgg16" "vit"; do
+#   for dataset in "imagenette" "cifar10"; do
+#     sbatch --job-name "nsir-$model-$dataset-$i" ./runner3.sh "$model" "$dataset" "proj"
+#   done
+# done

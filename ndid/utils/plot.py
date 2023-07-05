@@ -1,7 +1,6 @@
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.spatial import distance_matrix
 from ndid.data.cifar10 import CLASS_NAMES
 
 
@@ -73,11 +72,6 @@ def plot_sift(image, keypoints):
 
     subplot_image(1, 2, 2, img_kp, "Keypoints")
     plt.show()
-
-
-def calc_under_margin(vectors, margin=0.1):
-    dm = distance_matrix(vectors, vectors)
-    print('Under the margin', (dm < margin).sum() / 2)
 
 
 def visualizeTuple(anchor, positive, negative):

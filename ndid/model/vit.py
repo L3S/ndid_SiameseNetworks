@@ -1,6 +1,6 @@
 from ndid.utils.common import *
 import tensorflow_hub as hub
-from tensorflow.keras import layers, callbacks, datasets, Sequential
+from tensorflow.keras import layers, callbacks, datasets, Model, Sequential
 
 tensorboard_cb = callbacks.TensorBoard(get_logdir("vit/fit"))
 
@@ -10,15 +10,20 @@ TARGET_SHAPE = (224, 224)
 MODEL_URL = "https://tfhub.dev/sayakpaul/vit_s16_fe/1"
 
 
-class VitModel(Sequential):
-    def __init__(self, train_size=None):
-        super(VitModel, self).__init__([
-            hub.KerasLayer(MODEL_URL, trainable=False)
-        ], name='vit')
-        self.build((None,) + TARGET_SHAPE + (3,))
+class VitModel(Model):
+    def __init__(self, input_shape=TARGET_SHAPE, num_classes=10, weights="imagenet", train_size=None, **kwargs):
+        if weights == "imagenet":
+            model = Sequential([hub.KerasLayer(MODEL_URL, trainable=False)])
+            model.build((None,) + TARGET_SHAPE + (3,))
+            super(VitModel, self).__init__(inputs=model.input, outputs=model.output, name='vit')
+        else:
+            raise ValueError("Unknown weights: %s" % weights)
 
     def fit(self, x=None, y=None, callbacks=[tensorboard_cb], **kwargs):
         return super().fit(x=x, y=y, callbacks=callbacks, **kwargs)
+
+    def get_embedding_model(self):
+        return self
 
     @staticmethod
     def get_target_shape():

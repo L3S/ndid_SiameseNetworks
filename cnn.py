@@ -30,12 +30,16 @@ if inference_model_file.exists():
 else:
     model_basename = params.model + '_' + dataset.name + '_' + params.seed
     print('Inference model does not exist, training...')
-    if params.model != 'vit':
-        model = params.get_model(train_size=len(dataset.get_train()), weights=None)
-        model.compile()
-        model.summary()
+    model = params.get_model(train_size=len(dataset.get_train()), num_classes=dataset.num_classes, weights=params.weights)
+    model.compile()
+    model.summary()
+
+    if params.weights == 'imagenet':
+        print('Alexnet model loaded, skipping training.')
+    else:
         model_file = get_modeldir(model_basename + '.h5')
         if model_file.exists():
+            print('Loading model weights from %s', model_file)
             model.load_weights(model_file)
             print('Model weights loaded.')
         else:
@@ -49,10 +53,7 @@ else:
                 print('Model trained, evaluating...')
                 model.evaluate(dataset.get_test())
 
-        emb_model = model.get_embedding_model()
-    else:
-        emb_model = params.get_model()
-        print("Model loaded with Imagenet weights.")
+    emb_model = model.get_embedding_model()
 
     if params.cnn_vectors:
         projection_vectors, projection_labels = calc_vectors(dataset.get_combined(), emb_model)

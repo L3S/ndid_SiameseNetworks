@@ -14,6 +14,13 @@ EMBEDDING_VECTOR_DIMENSION = 2048
 class ResNetModel(Model):
     def __init__(self, input_shape=TARGET_SHAPE, num_classes=10, weights="imagenet", train_size=None, **kwargs):
         if weights == "imagenet":
+            model = tf.keras.applications.resnet_v2.ResNet50V2(
+                include_top=True,
+                input_shape=input_shape + (3,),
+                weights="imagenet",
+            )
+            model.trainable = False
+        elif weights == "imagenetplus":
             core = tf.keras.applications.resnet_v2.ResNet50V2(
                 include_top=False,
                 input_shape=input_shape + (3,),

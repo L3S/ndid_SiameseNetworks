@@ -5,7 +5,7 @@ from ndid.utils.common import get_logdir
 tensorboard_cb = callbacks.TensorBoard(get_logdir('efficientnet/fit'))
 
 BATCH_SIZE = 32
-TARGET_SHAPE = (224, 224)
+TARGET_SHAPE = (384, 384)
 
 PRETRAIN_EPOCHS = 20
 EMBEDDING_VECTOR_DIMENSION = 1280
@@ -14,6 +14,13 @@ EMBEDDING_VECTOR_DIMENSION = 1280
 class EfficientNetModel(Model):
     def __init__(self, input_shape=TARGET_SHAPE, num_classes=10, weights="imagenet", train_size=None, **kwargs):
         if weights == "imagenet":
+            model = tf.keras.applications.EfficientNetV2S(
+                include_top=True,
+                input_shape=input_shape + (3,),
+                weights="imagenet",
+            )
+            model.trainable = False
+        elif weights == "imagenetplus":
             core = tf.keras.applications.EfficientNetV2S(
                 include_top=False,
                 input_shape=input_shape + (3,),

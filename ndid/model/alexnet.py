@@ -12,8 +12,8 @@ TARGET_SHAPE = (224, 224)
 PRETRAIN_EPOCHS = 50
 EMBEDDING_VECTOR_DIMENSION = 4096
 
-def create_alexnet_model(input_shape, num_classes):
-    return Sequential([
+def create_alexnet_model(input_shape, num_classes, include_top=True):
+    model = Sequential([
         layers.Conv2D(filters=96, kernel_size=(11, 11), strides=(4, 4), activation='relu', input_shape=input_shape),
         layers.BatchNormalization(),
         layers.MaxPool2D(pool_size=(3, 3), strides=(2, 2)),
@@ -40,31 +40,33 @@ def create_alexnet_model(input_shape, num_classes):
 
         layers.Dense(4096, activation='relu'),
         layers.Dropout(rate=0.5),
-
-        layers.Dense(name='predictions', units=num_classes, activation='softmax')
     ])
+    if include_top:
+        model.add(layers.Dense(name='predictions', units=num_classes, activation='softmax'))
+    return model
 
 
 class AlexNetModel(Model):
 
     def __init__(self, input_shape=TARGET_SHAPE, num_classes=10, weights="imagenet", train_size=None, **kwargs):
         if weights == "imagenet":
-            core = create_alexnet_model(
+            model = create_alexnet_model(
                 input_shape=input_shape + (3,),
                 num_classes=1000,
             )
+            model.load_weights(get_weightsdir('alexnet_imagenet'))
+            model.trainable = False
+        elif weights == "imagenetplus":
+            core = create_alexnet_model(
+                input_shape=input_shape + (3,),
+                num_classes=1000,
+                include_top=False,
+            )
             core.load_weights(get_weightsdir('alexnet_imagenet'))
             core.trainable = False
-            core.summary()
 
-            core = Model(inputs=core.input, outputs=core.layers[-2].output)
-            
-            core.summary()
-            model = Sequential([
-                core,
-                layers.Dropout(rate=0.5),
-                layers.Dense(name='predictions', units=num_classes, activation='softmax'),
-            ])
+            top = layers.Dense(name='predictions', units=num_classes, activation='softmax')(core.output)
+            model = Model(inputs=core.input, outputs=top)
             model.summary()
         else:
             model = create_alexnet_model(
