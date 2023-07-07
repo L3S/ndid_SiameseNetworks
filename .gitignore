@@ -12,6 +12,8 @@ __pycache__
 /oldrun
 /logs
 /logs_*
+
+projector_config.*
 *.out
 *.err
 *.log
