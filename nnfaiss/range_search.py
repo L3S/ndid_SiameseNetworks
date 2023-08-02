@@ -8,7 +8,7 @@ import pickle
 import pandas as pd
 import os
 
-from ndid.utils.common import get_faissdir
+from sidd.utils.common import get_faissdir
 
 
 def load_embeddings_pkl(name='embeddings'):

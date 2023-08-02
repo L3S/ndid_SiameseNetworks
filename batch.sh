@@ -55,7 +55,7 @@ dimensions=512
 for i in {1..3}; do
   for model in "alexnet" "efficientnet" "mobilenet" "resnet" "vgg16" "vit"; do
     for dataset in "imagenette" "cifar10"; do
-      sbatch --job-name "nsir-$model-$dataset-$i" ./runner2.sh "$model" "$dataset" "final$i"
+      sbatch --job-name "nsir-$model-$dataset-$i" ./runner_vectors.sh "$model" "$dataset" "final$i"
     done
   done
 done
@@ -63,6 +63,6 @@ done
 # Projection
 # for model in "alexnet" "efficientnet" "mobilenet" "resnet" "vgg16" "vit"; do
 #   for dataset in "imagenette" "cifar10"; do
-#     sbatch --job-name "nsir-$model-$dataset-$i" ./runner3.sh "$model" "$dataset" "proj"
+#     sbatch --job-name "nsir-$model-$dataset-$i" ./runner_project.sh "$model" "$dataset" "proj"
 #   done
 # done
