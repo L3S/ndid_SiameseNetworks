@@ -7,6 +7,7 @@ The project structure is:
  - `/nnfaiss` - faiss analysis code
  - `/sidd` - Siamese models and training code
  - `/scripts` - extra scripts for data preparation
+ - `/siftbof` - scripts for the baseline method SIFT-BoF
  - `batch.sh` - SLURM batch script for running experiments
  - `runner*.py` - SLURM entry points for experiments
 
