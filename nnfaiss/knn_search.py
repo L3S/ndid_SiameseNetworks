@@ -11,29 +11,18 @@ import os
 from sidd.utils.common import get_faissdir
 
 
-def load_embeddings_pkl(name='embeddings'):
-    with open(name, 'rb') as infile:
+
+
+def load_embeddings_pbz2(name='embeddings'):
+    with bz2.BZ2File(name, 'rb') as infile:
         result = pickle.load(infile)
+
     return np.array(result[0], dtype='float32'), np.array(result[1])
 
 
-def load_embeddings_pbz2(name='embeddings', method=None):
-    with bz2.BZ2File(name, 'rb') as infile:
-        result = pickle.load(infile)
-    if method == "SIFT":
-        return np.array(result[0], dtype='float32'), np.array(result[1]), np.array(result[2])
-    else:
-        return np.array(result[0], dtype='float32'), np.array(result[1])
-
-
-def createIndex(data, indexstring, metric=faiss.METRIC_L2, efConstruction=-1):
+def createIndex(data, indexstring, metric=faiss.METRIC_L2):
     """
-    creates from the data (np.array) the index specified in the indexstring
-    (string), if the index is not trained, it will be trained on the data given,
-    if an HNSW index is used, you can set the efConstruction value. If the
-    default value (-1) is kept, the efConstruction is not set (good if not using
-    HNSW)
-    returns the trained index, the time to build the index and the memory consumed
+     -  Done as here: https://github.com/gpapadis/ContinuousFilteringBenchmark/tree/main/nnmethods/faiss
 
     """
     starttime = time.perf_counter()
@@ -44,28 +33,18 @@ def createIndex(data, indexstring, metric=faiss.METRIC_L2, efConstruction=-1):
         print("Index is not trained, training now")
         index.train(data)
         print("Index is now trained")
-    if efConstruction != -1:
-        index.hnsw.efConstruction = efConstruction
     index.add(data)
     stoptime = time.perf_counter()
     print("Building the index took {:.2f}s".format(stoptime - starttime))
     return (index, stoptime - starttime)
 
 
-def search(data, index, nn, probes=-1):
+def search(data, index, nn):
     """
-    given the search query (data, np.array) it searches the index. If the index
-    is an IVF index, it visits probes number of cells. Not available for HNSW
-    index.
-    it returns the distance table D and the ID table I for all vectors which
-    have a smaller distance than the threshold to the query vectors.
-    for i the ID of the queryvector, the distances and IDs of the corresponding
-    indices are stored in X[lim[i]:lim[i+1]]
+     -  Done as here: https://github.com/gpapadis/ContinuousFilteringBenchmark/tree/main/nnmethods/faiss
 
     """
     starttime = time.perf_counter()
-    if probes != -1:
-        index.nprobe = probes
     D, I = index.search(data, nn)
     stoptime = time.perf_counter()
     print("Searching took {:.2f} s".format(stoptime - starttime))
@@ -73,23 +52,15 @@ def search(data, index, nn, probes=-1):
 
 
 def trueMatches(index_labels, query_labels, NN_table, ukbench=False):
-    """
-    given a set of nearest neighbours in the NNtable, it calculates how many
-    can also be found in the truthtable (list of tuples) given. IDIndex and Query
-    contain the IDs of the index and query vectors. Those IDs are not included
-    when creating the index or searching, so the results have to be mapped to
-    the original index to use the truthtable.
-    """
+
     nCandidates = 0
     index_labels_u = np.array(index_labels.copy())
     query_labels_u = np.array(query_labels.copy())
     if ukbench:
         index_labels_u = index_labels_u // 4
         query_labels_u = query_labels_u // 4
-    # classified = collections.Counter()
+
     NN_labels = index_labels_u[NN_table]
-    # for row_ID, row in enumerate(NN_table):
-    #     NN_labels[row_ID,:] = index_labels_u[row].copy()
 
     query_labels_u = np.reshape(query_labels_u, (-1, 1))
 
@@ -102,57 +73,6 @@ def trueMatches(index_labels, query_labels, NN_table, ukbench=False):
 
     return nCandidates, truthtable, allMatch_perQuery
 
-
-def findNN(index_data, query_data, index_labels, query_labels, indexstring, treshold, allCandidates, data_table,
-           normtime, metric=faiss.METRIC_L2, startstep=1, probe=1, ukbench=False):
-    """
-    finds (approximately) the number of nearest neigbours, for which the recall is
-    above the treshold. The index is build from EmbIndex like specified in
-    indexstring, the query is EmbQuery, from the truthtable and IDIndex and
-    IDQuery the number of true matches is calculated. In the beginning the
-    algorithm increases the number of nearest neighbours by startstep.
-    Returns the number of nearest neighbors, the stepsize at the end and the
-    recall
-
-
-    """
-    print("starting the search")
-    nn = 1
-    step = startstep
-    recall = 0
-    once_above = False
-    once_below = False
-    print("start value: {}, start step: {}".format(nn, step))
-    index, indextime = createIndex(index_data, indexstring, metric)
-    D, I, searchtime = search(query_data, index, nn, probe)
-    data_table = NN_analysis(index_labels, query_labels, I, data_table, normtime + indextime + searchtime,
-                             ukbench=ukbench)
-    recall = data_table[-1][5]
-    print("NN: {}; Recall: {:.2f}".format(nn, recall))
-    while True:
-        if (recall >= treshold and (step == 1 or nn == 1)):
-            break
-        if recall > treshold:
-            once_above = True
-            if once_below:
-                step = max(int(step / 2), 1)
-            else:
-                step = step * 2
-            nn = max(nn - step, 1)
-        else:
-            once_below = True
-            if once_above:
-                step = max(int(step / 2), 1)
-            else:
-                step = step * 2
-            nn += step
-        D, I, searchtime = search(query_data, index, nn, probe)
-        data_table = NN_analysis(index_labels, query_labels, I, data_table, normtime + indextime + searchtime,
-                                 ukbench=ukbench)
-        recall = data_table[-1][5]
-        print("NN: {}; Recall: {:.2f}".format(nn, recall))
-
-    return data_table
 
 
 def remove_bad_entries(values, labels, vec_size):
@@ -293,6 +213,9 @@ def NN_analysis(index_labels, query_labels, NN_table, D_table, data_table, runti
 
 
 def get_file_names(read_all, input_folder, loops={}, analysis='params', skip='', skip_not='', no_siamese=False):
+    """
+    Create the filenames according to the information given, or read the full input_folder. 
+    """
     input_files = []
     output_files = []
     datasets = []
@@ -500,6 +423,8 @@ if __name__ == '__main__':
     normtime = 0
     indexstring = 'Flat'
 
+    # Input and output path information
+
     output_folder = "/home/schoger/siamese/faiss_analysis/files/"
 
     if model == 'hsv':
@@ -561,20 +486,8 @@ if __name__ == '__main__':
         else:
             ukbench = False
 
-        if model == 'SIFT':
-            index_values, index_names, index_labels = load_embeddings_pbz2(input_folder + filename + '_index.pbz2',
-                                                                           method=model)
-            query_values, query_names, query_labels = load_embeddings_pbz2(input_folder + filename + '_query.pbz2',
-                                                                           method=model)
-
-            values = np.concatenate((index_values, query_values), axis=0)
-            labels = np.concatenate((index_labels, query_labels), axis=0)
-            print(index_values.shape, values.shape)
-            # if normed:
-            #     index_values, normtime_i = norm(index_values)
-            #     query_values, normtime_q = norm(query_values)
-        else:
-            values, labels = load_embeddings_pbz2(input_folder + filename)
+        
+        values, labels = load_embeddings_pbz2(input_folder + filename)
         if ukbench:
             index_values, index_labels, query_values, query_labels = split_index_query_ukbench(values, labels,
                                                                                                normed=normed)
@@ -601,9 +514,8 @@ if __name__ == '__main__':
         m_c = int(sum(index_counter.values()) / len(index_counter.keys()))
 
         index, indextime = createIndex(index_values, indexstring, metric)
-        for nn in [i_c]:
-            D, I, searchtime = search(query_values, index, nn)
-            data_table = NN_analysis(index_labels, query_labels, I, D, data_table, normtime + indextime + searchtime,
+        D, I, searchtime = search(query_values, index, i_c)
+        data_table = NN_analysis(index_labels, query_labels, I, D, data_table, normtime + indextime + searchtime,
                                      ukbench=ukbench)
 
         data_table.to_csv(fin_output_folder + output_filename, index=False)
