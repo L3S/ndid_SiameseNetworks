@@ -1,7 +1,7 @@
 import tensorflow as tf
 from glob import glob
-from ndid.utils.common import get_dataset
-from ndid.data import AsbDataset
+from sidd.utils.common import get_dataset
+from sidd.data import AsbDataset
 
 DEFAULT_BATCH_SIZE = 32
 DEFAULT_IMAGE_SIZE = (1024, 768)
