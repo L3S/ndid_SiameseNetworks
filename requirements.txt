@@ -3,6 +3,7 @@
 # CONDA_OVERRIDE_CUDA="11.8" conda install -c conda-forge tensorflow-gpu=>2.13
 # conda install -c conda-forge faiss-gpu
 # pip install -r requirements.txt
+# one more issue described here https://github.com/keras-team/tf-keras/issues/62
 
 matplotlib~=3.7
 opencv-python~=4.8.1

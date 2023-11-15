@@ -17,11 +17,10 @@ dataset = params.get_dataset(
     map_fn=params.get_model_class().preprocess_input
 )
 
-if params.ukbench:
-    ukbench = UKBench(
-        image_size=params.get_model_class().get_target_shape(),
-        map_fn=params.get_model_class().preprocess_input
-    )
+evalds = params.get_eval_dataset(
+    image_size=params.get_model_class().get_target_shape(),
+    map_fn=params.get_model_class().preprocess_input
+)
 
 inference_model_file = get_modeldir('siamese_inference_' + params.basename + '.tf')
 if inference_model_file.exists():
@@ -65,16 +64,19 @@ else:
         if params.project_vectors:
             project_embeddings(projection_vectors, projection_labels, model_basename)
 
-        if params.ukbench:
-            print('Computing UKBench vectors...')
-            ukbench_vectors, ukbench_labels = calc_vectors(ukbench.get_combined(), emb_model)
+        if evalds is not None:
+            print('Computing ' + evalds.name + ' vectors...')
+            eval_vectors, eval_labels = calc_vectors(evalds.get_combined(), emb_model)
+
             if params.save_vectors:
-                save_embeddings(ukbench_vectors, ukbench_labels, 'ukbench_' + model_basename + '_vectors')
+                save_embeddings(eval_vectors, eval_labels, 'eval_' + evalds.name + '_' +  model_basename + '_vectors')
+
             if params.compute_stats:
-                knn_search.compute_and_save(ukbench_vectors, ukbench_labels, 'ukbench_' + model_basename + '_knn', True)
-                range_search.compute_and_save(ukbench_vectors, ukbench_labels, 'ukbench_' + model_basename + '_range', True)
+                knn_search.compute_and_save(eval_vectors, eval_labels, 'eval_' + evalds.name + '_' +  model_basename + '_knn', True)
+                range_search.compute_and_save(eval_vectors, eval_labels, 'eval_' + evalds.name + '_' +  model_basename + '_range', True)
+
             if params.project_vectors:
-                project_embeddings(ukbench_vectors, ukbench_labels, 'ukbench_' + model_basename)
+                project_embeddings(eval_vectors, eval_labels, 'eval_' + evalds.name + '_' +  model_basename)
 
     emb_model.summary()
     embeddings_file = get_datadir(emb_model.name + '_' + dataset.name + '_' + params.seed)
@@ -110,17 +112,17 @@ if params.compute_stats:
 if params.project_vectors:
     project_embeddings(projection_vectors, projection_labels, inference_model.name)
 
-if params.ukbench:
-    print('Computing UKBench inference vectors...')
-    ukbench_vectors, ukbench_labels = calc_vectors(ukbench.get_combined(), inference_model)
+if evalds is not None:
+    print('Computing ' + evalds.name + ' vectors...')
+    eval_vectors, eval_labels = calc_vectors(evalds.get_combined(), inference_model)
     if params.save_vectors:
-        save_embeddings(ukbench_vectors, ukbench_labels, 'ukbench_' + inference_model.name + '_vectors')
+        save_embeddings(eval_vectors, eval_labels, 'eval_' + evalds.name + '_' +  inference_model.name + '_vectors')
 
     if params.compute_stats:
-        knn_search.compute_and_save(ukbench_vectors, ukbench_labels, 'ukbench_' + inference_model.name + '_knn', True)
-        range_search.compute_and_save(ukbench_vectors, ukbench_labels, 'ukbench_' + inference_model.name + '_range', True)
+        knn_search.compute_and_save(eval_vectors, eval_labels, 'eval_' + evalds.name + '_' +  inference_model.name + '_knn', True)
+        range_search.compute_and_save(eval_vectors, eval_labels, 'eval_' + evalds.name + '_' +  inference_model.name + '_range', True)
 
     if params.project_vectors:
-        project_embeddings(ukbench_vectors, ukbench_labels, 'ukbench_' + inference_model.name)
+        project_embeddings(eval_vectors, eval_labels, 'eval_' + evalds.name + '_' +  inference_model.name)
 
 print('Done!\n')

@@ -50,19 +50,32 @@ dimensions=512
 #   done
 # done
 
-# UKBench
+# Projection
+# for model in "alexnet" "efficientnet" "mobilenet" "resnet" "vgg16" "vit"; do
+#   for dataset in "imagenette" "cifar10"; do
+#     sbatch --job-name "nsir-$model-$dataset-$i" ./runner3.sh "$model" "$dataset" "proj"
+#   done
+# done
+
+# Evaluate on different datasets
 # weights=imagenetplus
 for i in {1..3}; do
   for model in "alexnet" "efficientnet" "mobilenet" "resnet" "vgg16" "vit"; do
     for dataset in "imagenette" "cifar10"; do
-      sbatch --job-name "nsir-$model-$dataset-$i" ./runner_vectors.sh "$model" "$dataset" "final$i"
+      for evalds in "mirflickr"; do
+        sbatch --job-name "nsir-$model-$dataset" ./runner_evals.sh "$model" "$dataset" "$evalds" "final$i"
+      done
     done
   done
 done
 
-# Projection
-# for model in "alexnet" "efficientnet" "mobilenet" "resnet" "vgg16" "vit"; do
-#   for dataset in "imagenette" "cifar10"; do
-#     sbatch --job-name "nsir-$model-$dataset-$i" ./runner_project.sh "$model" "$dataset" "proj"
+# Evaluate base CNNs
+# for i in {1..3}; do
+#   for model in "alexnet" "efficientnet" "mobilenet" "resnet" "vgg16" "vit"; do
+#     for dataset in "cifar10"; do
+#       for evalds in "mirflickr"; do # "mirflickr" "ukbench" "california" "copydays"
+#         sbatch --job-name "nsir-$model-$dataset" ./runner_eval.sh "$model" "$dataset" "$evalds" "final$i"
+#       done
+#     done
 #   done
 # done
