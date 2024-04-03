@@ -10,6 +10,7 @@ from sidd.model.alexnet import AlexNetModel
 from sidd.model.efficientnet import EfficientNetModel
 from sidd.model.mobilenet import MobileNetModel
 from sidd.model.resnet import ResNetModel
+from sidd.model.simclr import SimclrModel
 from sidd.model.vgg16 import VGG16Model
 from sidd.model.vit import VitModel
 
@@ -17,7 +18,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--dataset", "-D", help="Dataset", default="simple3",
                     choices=["simple3", "cifar10", "imagenette"], type=str)
 parser.add_argument("--model", "-M", help="Model", default="alexnet",
-                    choices=["alexnet", "efficientnet", "mobilenet", "resnet", "vgg16", "vit"], type=str)
+                    choices=["alexnet", "efficientnet", "mobilenet", "resnet", "vgg16", "vit", "simclr"], type=str)
 parser.add_argument("--weights", "-W", help="Weights", default="imagenet",
                     choices=["imagenet", "imagenetplus", "dataset"], type=str)
 
@@ -100,6 +101,8 @@ class SimpleParams:
             cls = VGG16Model
         elif self.model == "vit":
             cls = VitModel
+        elif self.model == "simclr":
+            cls = SimclrModel
         else:
             raise ValueError("Model not found")
         return cls
