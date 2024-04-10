@@ -1,10 +1,9 @@
 import glob
-from sidd.utils.hsv import extract_hsv
 from sidd.data.cifar10 import Cifar10
 from sidd.data.imagenette import Imagenette
 from sidd.data.ukbench import UKBench
-from sidd.utils.embeddings import calc_vectors_fn, save_vectors, project_embeddings, load_vectors
-from sidd.utils.common import get_datadir, get_modeldir, get_logdir_root, get_vectorsdir
+from sidd.utils.embeddings import project_embeddings, load_vectors
+from sidd.utils.common import get_vectorsdir
 
 TARGET_SHAPE = (224, 224)
 dataset_img = Imagenette(batch_size=None, image_size=TARGET_SHAPE)

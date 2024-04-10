@@ -40,8 +40,8 @@ def get_datadir(name):
 
 
 def get_faissdir(name):
-    return Path(get_project_root(), "faiss", name)
+    return Path(get_project_root(), "data/faiss", name)
 
 
 def get_vectorsdir(name):
-    return Path(get_project_root(), "vectors", name)
+    return Path(get_project_root(), "data/vectors", name)

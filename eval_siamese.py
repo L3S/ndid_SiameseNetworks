@@ -4,8 +4,8 @@ import tensorflow as tf
 
 from nnfaiss import knn_search, range_search
 from sidd import SimpleParams
-from sidd.utils.common import get_modeldir, get_datadir, get_vectorsdir
-from sidd.utils.embeddings import project_embeddings, calc_vectors, save_vectors, save_embeddings, load_vectors
+from sidd.utils.common import get_modeldir
+from sidd.utils.embeddings import project_embeddings, calc_vectors, save_embeddings
 
 tf.get_logger().setLevel('INFO')
 log.basicConfig(filename="logfile.log", level=log.INFO, format='%(asctime)s %(message)s')
