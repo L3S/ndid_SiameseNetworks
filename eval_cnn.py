@@ -11,12 +11,12 @@ tf.get_logger().setLevel('INFO')
 log.basicConfig(filename="logfile.log", level=log.INFO, format='%(asctime)s %(message)s')
 
 params = SimpleParams.parse()
-dataset = params.get_dataset(
+dataset = params.get_dataset( # Model train dataset
     image_size=params.get_model_class().get_target_shape(),
     map_fn=params.get_model_class().preprocess_input
 )
 
-evalds = params.get_eval_dataset(
+evalds = params.get_eval_dataset( # Evaluation dataset
     image_size=params.get_model_class().get_target_shape(),
     map_fn=params.get_model_class().preprocess_input
 )
@@ -29,7 +29,6 @@ model_basename = params.model + '_' + dataset.name + '_' + params.seed
 print('Inference model does not exist, training...')
 model = params.get_model(train_size=len(dataset.get_train()), num_classes=dataset.num_classes, weights=params.weights)
 model.compile()
-model.summary()
 
 if params.weights == 'imagenet':
     print('Alexnet model loaded, skipping training.')
