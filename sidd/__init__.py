@@ -1,8 +1,14 @@
 import time
 import argparse
+from sidd.data.californiand import CaliforniaND
+from sidd.data.holidays import Holidays
+from sidd.data.imagenet1k import ImageNet1k
+from sidd.data.mirflickr import MFND
+from sidd.data.mirflickr_full import MFNDFull
 from sidd.data.simple3 import Simple3
 from sidd.data.imagenette import Imagenette
 from sidd.data.cifar10 import Cifar10
+from sidd.data.ukbench import UKBench
 from sidd.loss import ContrastiveLoss, TripletEasyLoss, TripletSemiHardLoss, TripletHardLoss
 from sidd.model.siamese import SiameseModel
 from sidd.model.siamese_offlinetriplet import SiameseOfflineTripletModel
@@ -15,19 +21,22 @@ from sidd.model.vgg16 import VGG16Model
 from sidd.model.vit import VitModel
 
 parser = argparse.ArgumentParser()
+# Model params
 parser.add_argument("--dataset", "-D", help="Dataset", default="simple3",
-                    choices=["simple3", "cifar10", "imagenette"], type=str)
+                    choices=["simple3", "cifar10", "imagenette", "imagenet"], type=str)
 parser.add_argument("--model", "-M", help="Model", default="alexnet",
                     choices=["alexnet", "efficientnet", "mobilenet", "resnet", "vgg16", "vit", "simclr"], type=str)
 parser.add_argument("--weights", "-W", help="Weights", default="imagenet",
                     choices=["imagenet", "imagenetplus", "dataset"], type=str)
-
-# model params
 parser.add_argument("--loss", "-l", help="Loss function", default="contrastive",
                     choices=["contrastive", "easy-triplet", "semi-hard-triplet", "hard-triplet"], type=str)
 parser.add_argument("--margin", "-m", help="Margin for the loss function", default=1.5, type=float)
 parser.add_argument("--dimensions", "-d", help="The dimension of Siamese output", default=512, type=int)
 parser.add_argument("--epochs", "-e", help="Number of epochs, each epoch consists of 100 steps", default=15, type=int)
+
+# Evaluation params
+parser.add_argument("--eval-dataset", "-ED", help="Evaluation datasets", default="ukbench",
+                    choices=["ukbench", "holidays", "mirflickr", "mirflickr-full", "californiand"], type=str)
 
 # other params
 parser.add_argument("--seed", "-s", help="Set seed value", default="", type=str)
@@ -47,21 +56,24 @@ class SimpleParams:
         print('Params received: {}'.format(args))
         return cls(args.dataset, args.model, args.weights,
                    args.loss, args.margin, args.dimensions, args.epochs,
+                   args.eval_dataset,
                    args.seed, args.ukbench,
                    args.cnn_vectors, args.save_vectors, args.project_vectors, args.compute_stats)
 
     def __init__(self, dataset, model, weights,
                  loss, margin, dimensions, epochs,
+                 eval_dataset,
                  seed, ukbench,
                  cnn_vectors, save_vectors, project_vectors, compute_stats):
         self.dataset = dataset
         self.model = model
         self.weights = weights
-
         self.loss = loss
         self.margin = margin
         self.dimensions = dimensions
         self.epochs = epochs
+
+        self.eval_dataset = eval_dataset
 
         self.cnn_vectors = cnn_vectors
         self.save_vectors = save_vectors
@@ -84,8 +96,25 @@ class SimpleParams:
             cls = Imagenette
         elif self.dataset == "simple3":
             cls = Simple3
+        elif self.dataset == "imagenet":
+            cls = ImageNet1k
         else:
             raise ValueError("Dataset not found")
+        return cls(**kwargs)
+
+    def get_eval_dataset(self, **kwargs):
+        if self.eval_dataset == "ukbench":
+            cls = UKBench
+        elif self.eval_dataset == "holidays":
+            cls = Holidays
+        elif self.eval_dataset == "mirflickr":
+            cls = MFND
+        elif self.eval_dataset == "mirflickr-full":
+            cls = MFNDFull
+        elif self.eval_dataset == "californiand":
+            cls = CaliforniaND
+        else:
+            raise ValueError("Evaluation dataset not found")
         return cls(**kwargs)
 
     def get_model_class(self):

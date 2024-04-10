@@ -73,7 +73,7 @@ done
 # for i in {1..3}; do
 #   for model in "alexnet" "efficientnet" "mobilenet" "resnet" "vgg16" "vit"; do
 #     for dataset in "cifar10"; do
-#       for evalds in "mirflickr"; do # "mirflickr" "ukbench" "california" "copydays"
+#       for evalds in "mirflickr"; do # "mirflickr" "ukbench" "californiand" "copydays"
 #         sbatch --job-name "nsir-$model-$dataset" ./runner_eval.sh "$model" "$dataset" "$evalds" "final$i"
 #       done
 #     done
