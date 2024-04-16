@@ -1,13 +1,13 @@
 import tensorflow as tf
 from sidd.utils.common import get_dataset
-from sidd.data import AsbDataset
+from sidd.data import AbsDataset
 
 DEFAULT_BATCH_SIZE = 32
 DEFAULT_IMAGE_SIZE = (32, 32)
 CLASS_NAMES = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
 
 
-class Cifar10(AsbDataset):
+class Cifar10(AbsDataset):
     def __init__(self, image_size=DEFAULT_IMAGE_SIZE, batch_size=DEFAULT_BATCH_SIZE, map_fn=None):
         super(Cifar10, self).__init__(name='cifar10', classes=CLASS_NAMES, image_size=image_size, batch_size=batch_size, map_fn=map_fn)
 

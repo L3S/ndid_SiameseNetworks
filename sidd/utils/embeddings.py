@@ -9,7 +9,6 @@ from tensorboard.plugins import projector
 from google.protobuf import text_format
 
 from sidd.utils.common import get_datadir, get_logdir_root, get_vectorsdir
-from sidd.data import AsbDataset
 
 
 def load_vectors(name='embeddings'):

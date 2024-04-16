@@ -40,7 +40,6 @@ parser.add_argument("--eval-dataset", "-ED", help="Evaluation datasets", default
 
 # other params
 parser.add_argument("--seed", "-s", help="Set seed value", default="", type=str)
-parser.add_argument("--ukbench", help="Compute UKBench vectors", default=False, type=bool)
 
 # what to save
 parser.add_argument("--cnn-vectors", help="Save CNN's embeddings", default=False, type=bool)
@@ -49,21 +48,19 @@ parser.add_argument("--compute-stats", help="Compute FAISS statistical analysis"
 parser.add_argument("--project-vectors", help="Project embeddings", default=False, type=bool)
 
 
-class SimpleParams:
+class SiameseCliParams:
     @classmethod
     def parse(cls):
         args = parser.parse_args()
         print('Params received: {}'.format(args))
         return cls(args.dataset, args.model, args.weights,
                    args.loss, args.margin, args.dimensions, args.epochs,
-                   args.eval_dataset,
-                   args.seed, args.ukbench,
+                   args.eval_dataset, args.seed,
                    args.cnn_vectors, args.save_vectors, args.project_vectors, args.compute_stats)
 
     def __init__(self, dataset, model, weights,
                  loss, margin, dimensions, epochs,
-                 eval_dataset,
-                 seed, ukbench,
+                 eval_dataset, seed,
                  cnn_vectors, save_vectors, project_vectors, compute_stats):
         self.dataset = dataset
         self.model = model
@@ -80,42 +77,53 @@ class SimpleParams:
         self.project_vectors = project_vectors
         self.compute_stats = compute_stats
 
-        self.basename = model + '_' + dataset + '_' + weights + '_d' + str(dimensions) + '_m' + str(margin) + '_s' + str(epochs * 100) + '_' + loss
-
-        self.ukbench = ukbench
         if len(seed) > 0:
             self.seed = seed
         else:
             self.seed = str(int(time.time()))
-        self.basename += '_' + self.seed
+
+        # Construct model names
+        core_name = model
+        if weights == "imagenet":
+            core_name += '_' + weights
+        elif weights == "imagenetplus":
+            core_name += '_' + weights + dataset
+        else:
+            core_name += '_' + dataset
+
+        self.cnn_name = core_name + '_' + self.seed
+        if weights == "imagenet":
+            self.cnn_name = core_name
+        self.siamesecnn_name = core_name + '_d' + str(dimensions) + '_m' + str(margin) + '_s' + str(epochs * 100) + '_' + loss + '_' + self.seed
 
     def get_dataset(self, **kwargs):
-        if self.dataset == "cifar10":
-            cls = Cifar10
-        elif self.dataset == "imagenette":
-            cls = Imagenette
-        elif self.dataset == "simple3":
-            cls = Simple3
-        elif self.dataset == "imagenet":
-            cls = ImageNet1k
-        else:
-            raise ValueError("Dataset not found")
-        return cls(**kwargs)
+        return self.get_dataset_class(self.dataset)(**kwargs)
 
     def get_eval_dataset(self, **kwargs):
-        if self.eval_dataset == "ukbench":
+        return self.get_dataset_class(self.eval_dataset)(**kwargs)
+
+    def get_dataset_class(self, dsname):
+        if dsname == "cifar10":
+            cls = Cifar10
+        elif dsname == "imagenette":
+            cls = Imagenette
+        elif dsname == "simple3":
+            cls = Simple3
+        elif dsname == "imagenet":
+            cls = ImageNet1k
+        elif dsname == "ukbench":
             cls = UKBench
-        elif self.eval_dataset == "holidays":
+        elif dsname == "holidays":
             cls = Holidays
-        elif self.eval_dataset == "mirflickr":
+        elif dsname == "mirflickr":
             cls = MFND
-        elif self.eval_dataset == "mirflickr-full":
+        elif dsname == "mirflickr-full":
             cls = MFNDFull
-        elif self.eval_dataset == "californiand":
+        elif dsname == "californiand":
             cls = CaliforniaND
         else:
-            raise ValueError("Evaluation dataset not found")
-        return cls(**kwargs)
+            raise ValueError("Dataset not found")
+        return cls
 
     def get_model_class(self):
         if self.model == "alexnet":

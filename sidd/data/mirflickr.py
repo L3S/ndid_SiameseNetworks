@@ -1,13 +1,13 @@
 import tensorflow as tf
 from glob import glob
 from sidd.utils.common import get_dataset
-from sidd.data import AsbDataset
+from sidd.data import AbsDataset
 
 DEFAULT_BATCH_SIZE = 32
 DEFAULT_IMAGE_SIZE = (500, 500)
 
 
-class MFND(AsbDataset):
+class MFND(AbsDataset):
     def __init__(self, image_size=DEFAULT_IMAGE_SIZE, batch_size=DEFAULT_BATCH_SIZE, map_fn=None):
         super(MFND, self).__init__(name='mirflickr', classes=[], image_size=image_size, batch_size=batch_size, map_fn=map_fn)
 

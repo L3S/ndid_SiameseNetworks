@@ -1,13 +1,13 @@
 import tensorflow as tf
 from sidd.utils.common import get_dataset
-from sidd.data import AsbDataset
+from sidd.data import AbsDataset
 
 DEFAULT_BATCH_SIZE = 6
 DEFAULT_IMAGE_SIZE = (400, 320)
 CLASS_NAMES = ['building', 'dog', 'player']
 
 
-class Simple3(AsbDataset):
+class Simple3(AbsDataset):
     def __init__(self, image_size=DEFAULT_IMAGE_SIZE, batch_size=DEFAULT_BATCH_SIZE, map_fn=None):
         super(Simple3, self).__init__(name='simple3', classes=CLASS_NAMES, image_size=image_size, batch_size=batch_size, map_fn=map_fn)
 

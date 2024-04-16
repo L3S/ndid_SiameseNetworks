@@ -4,13 +4,13 @@ import tensorflow as tf
 import numpy as np
 import tensorflow_datasets as tfds
 import matplotlib.pyplot as plt
-from sidd.data import AsbDataset
+from sidd.data import AbsDataset
 from sidd.utils.common import get_dataset
 
 plt.rcParams["figure.figsize"] = 30, 30
 
 
-class ImageNet1k(AsbDataset):
+class ImageNet1k(AbsDataset):
     def __init__(self, map_fn=None, batch_size=None):
         super(ImageNet1k, self).__init__(name='imagenet1k', num_classes=1000, batch_size=batch_size, map_fn=map_fn)
 

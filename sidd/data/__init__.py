@@ -5,7 +5,7 @@ PRINT_SIZE = True
 DEFAULT_BATCH_SIZE = 32
 
 
-class AsbDataset(ABC):
+class AbsDataset(ABC):
     def __init__(self,
                  name: str,
                  classes: List[str] = None,

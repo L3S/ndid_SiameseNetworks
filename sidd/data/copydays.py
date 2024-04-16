@@ -1,13 +1,13 @@
 import tensorflow as tf
 from glob import glob
 from sidd.utils.common import get_dataset
-from sidd.data import AsbDataset
+from sidd.data import AbsDataset
 
 DEFAULT_BATCH_SIZE = 32
 DEFAULT_IMAGE_SIZE = (2048, 1536)
 
 
-class CopyDays(AsbDataset):
+class CopyDays(AbsDataset):
     def __init__(self, image_size=DEFAULT_IMAGE_SIZE, batch_size=DEFAULT_BATCH_SIZE, map_fn=None):
         super(CopyDays, self).__init__(name='copydays', classes=[], image_size=image_size, batch_size=batch_size, map_fn=map_fn)
 

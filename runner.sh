@@ -11,7 +11,7 @@ conda activate tf
 
 # print available GPUs
 # python3 -c "import tensorflow as tf; print(tf.config.list_physical_devices('GPU'))"
-python3 /home/astappiev/nsir/cnn.py -M "$1" -D "$2" -W "$3" -l "$4" -m "$5" -d "$6" -e "$7" -s "$8" --ukbench True --compute-stats True
+python3 /home/astappiev/nsir/cnn.py -M "$1" -D "$2" -W "$3" -l "$4" -m "$5" -d "$6" -e "$7" -s "$8" --compute-stats True
 
 wait  # Wait for all jobs to complete
 exit 0 # happy end

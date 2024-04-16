@@ -9,7 +9,7 @@
 source /opt/conda/etc/profile.d/conda.sh
 conda activate tf
 
-python3 /home/astappiev/nsir/eval_cnn.py -M "$1" -D "$2" -ED "$3" -s "$4" --save-vectors True #--compute-stats True
+python3 /home/astappiev/nsir/cnn_siamese.py -M "$1" -D "$2" -ED "$3" -s "$4" --save-vectors True #--compute-stats True
 
 wait  # Wait for all jobs to complete
 exit 0 # happy end
