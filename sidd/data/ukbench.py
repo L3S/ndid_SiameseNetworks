@@ -1,3 +1,4 @@
+import math
 import tensorflow as tf
 from glob import glob
 from sidd.utils.common import get_dataset
@@ -38,6 +39,8 @@ class UKBench(AbsDataset):
             label = tf.strings.split(path, 'ukbench')[2]  # remove 'ukbench'
             label = tf.strings.split(label, '.', 1)[0]
             label = tf.strings.to_number(label, tf.int32)
+            # use the same label for all images of each kind
+            label = math.floor(label / 4)
             return resized, label
 
         dataset_path_glob = glob(str(get_dataset('ukbench')) + '/*.jpg')
