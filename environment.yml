@@ -1,0 +1,12 @@
+name: tf
+channels:
+  - conda-forge
+dependencies:
+  - python>=3.11
+  - pip
+  - matplotlib
+  - tensorflow-gpu>=2.15
+  - tensorflow-datasets
+  - tensorflow-hub
+  # - pandas
+  # - faiss-gpu

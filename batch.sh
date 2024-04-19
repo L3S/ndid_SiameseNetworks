@@ -16,7 +16,7 @@ dimensions=512
 #   for model in "alexnet" "efficientnet" "mobilenet" "resnet" "vgg16" "vit"; do
 #     for dataset in "cifar10"; do
 #       for evalds in "mirflickr"; do # "mirflickr" "ukbench" "californiand" "copydays"
-#         sbatch --job-name "nsir-$model-$dataset" ./eval_cnn.sh "$model" "$dataset" "$evalds" "final$i"
+#         sbatch --job-name "sidd-$model-$dataset" ./eval_cnn.sh -M "$model" -D "$dataset" -ED "$evalds" -s "final$i"
 #       done
 #     done
 #   done
@@ -28,7 +28,7 @@ dimensions=512
 #   for model in "alexnet" "efficientnet" "mobilenet" "resnet" "vgg16" "vit"; do
 #     for dataset in "imagenette" "cifar10"; do
 #       for evalds in "mirflickr"; do
-#         sbatch --job-name "nsir-$model-$dataset" ./eval_siamese.sh "$model" "$dataset" "$evalds" "final$i"
+#         sbatch --job-name "sidd-$model-$dataset" ./eval_siamese.sh -M "$model" -D "$dataset" -ED "$evalds" -s "final$i"
 #       done
 #     done
 #   done
@@ -42,7 +42,7 @@ for i in {1..3}; do
         for margin in "1" "1.5" "2"; do
           for loss in "contrastive" "semi-hard-triplet" "hard-triplet"; do
             for epochs in "10" "20" "30"; do
-              sbatch --job-name "nsir-$model-$dataset" ./eval_cnn.sh "$model" "$dataset" "$evalds" "final$i"
+              sbatch --job-name "sidd-$model-$dataset" ./eval_siamese.sh -M $model -D $datasetnch -m $margin -l $loss -e $epochs -s exp$i --save-vectors True
             done
           done
         done
@@ -56,7 +56,7 @@ done
 #   for model in "alexnet" "efficientnet" "mobilenet" "resnet" "vgg16" "vit"; do
 #     for dataset in "imagenette" "cifar10"; do
 #       for margin in "0.5" "0.75" "1" "1.25" "1.5" "1.75" "2"; do # "0.5" "0.75" "1" "1.25" "1.5" "1.75" "2"
-#         sbatch --job-name "nsir-$model-$dataset-$loss-$margin-$dimensions-$epochs-$i" ./runner.sh "$model" "$dataset" "$weights" "$loss" "$margin" "$dimensions" "$epochs" "hpm$i"
+#         sbatch --job-name "sidd-$model-$dataset-$loss-$margin-$dimensions-$epochs-$i" ./runner.sh -M "$model" -D "$dataset" -W "$weights" -l "$loss" -m "$margin" -d "$dimensions" -e "$epochs" -s "hpm$i"
 #       done
 #     done
 #   done

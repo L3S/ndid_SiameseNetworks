@@ -6,10 +6,10 @@
 #SBATCH --gpus=2                    # Number of GPUs to request
 #SBATCH --mem=16G                   # Amount of RAM memory requested
 
-source /opt/conda/etc/profile.d/conda.sh
-conda activate tf
+source /etc/bashrc.d/mamba.sh
+mamba activate tf
 
-python3 /home/astappiev/nsir/cnn_siamese.py -M "$1" -D "$2" -ED "$3" -s "$4" --save-vectors True #--compute-stats True
+python3 /home/astappiev/nsir/cnn_siamese.py "$@"
 
 wait  # Wait for all jobs to complete
 exit 0 # happy end
