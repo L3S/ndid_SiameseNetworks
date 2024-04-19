@@ -23,7 +23,7 @@ from sidd.model.vit import VitModel
 parser = argparse.ArgumentParser()
 # Model params
 parser.add_argument("--dataset", "-D", help="Dataset", default="simple3",
-                    choices=["simple3", "cifar10", "imagenette", "imagenet"], type=str)
+                    choices=["simple3", "cifar10", "imagenette", "imagenet", "ukbench", "holidays", "mirflickr", "mirflickr-full", "californiand"], type=str)
 parser.add_argument("--model", "-M", help="Model", default="alexnet",
                     choices=["alexnet", "efficientnet", "mobilenet", "resnet", "vgg16", "vit", "simclr"], type=str)
 parser.add_argument("--weights", "-W", help="Weights", default="imagenet",

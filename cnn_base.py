@@ -11,7 +11,7 @@ import logging as log
 import tensorflow as tf
 from tensorflow.keras import Model
 
-from nnfaiss import knn_search, range_search
+# from nnfaiss import knn_search, range_search
 from sidd import SiameseCliParams
 from sidd.data import AbsDataset
 from sidd.utils.common import get_modeldir, get_datadir
@@ -31,13 +31,20 @@ def train_cnn(model: Model, ds: AbsDataset):
         model.evaluate(ds.get_test())
 
 
-def load_cnn(params: SiameseCliParams, ds: AbsDataset, train = True) -> Model:
-    model = params.get_model(train_size=len(ds.get_train()), num_classes=ds.num_classes, weights=params.weights)
-    model.compile()
-
+def load_cnn(params: SiameseCliParams, train = True) -> Model:
     if params.weights == 'imagenet':
+        model = params.get_model(weights=params.weights)
+        model.compile()
         print('Alexnet model loaded, skipping training.')
     else:
+        dataset = params.get_dataset( # Model train dataset
+            image_size=params.get_model_class().get_target_shape(),
+            map_fn=params.get_model_class().preprocess_input
+        )
+
+        model = params.get_model(train_size=len(dataset.get_train()), num_classes=dataset.num_classes, weights=params.weights)
+        model.compile()
+
         model_file = get_modeldir(params.cnn_name + '.h5')
         if model_file.exists():
             print('Loading model weights from %s', model_file)
@@ -45,7 +52,7 @@ def load_cnn(params: SiameseCliParams, ds: AbsDataset, train = True) -> Model:
             print('Model weights loaded.')
         elif train:
             print('Model weights do not exist, training...')
-            train_cnn(model, ds)
+            train_cnn(model, dataset)
             model.save_weights(model_file)
         else:
             print('Model weights do not exist. Exiting.')
@@ -54,28 +61,28 @@ def load_cnn(params: SiameseCliParams, ds: AbsDataset, train = True) -> Model:
     return model
 
 
-def evaluate_combined(params: SiameseCliParams, model: Model, ds: AbsDataset):
-    print('Computing ' + ds.name + ' vectors...')
-    eval_vectors, eval_labels = calc_vectors(ds.get_combined(), model)
+def evaluate(params: SiameseCliParams, model: Model, ds: tf.data.Dataset, ds_name: str):
+    print('Computing ' + ds_name + ' vectors...')
+    eval_vectors, eval_labels = calc_vectors(ds, model)
 
     if params.save_vectors:
-        save_embeddings(eval_vectors, eval_labels, 'eval_' + ds.name + '_' +  model.name + '_vectors')
+        save_embeddings(eval_vectors, eval_labels, 'eval_' + ds_name + '_' +  model.name + '_vectors')
 
-    if params.compute_stats:
-        knn_search.compute_and_save(eval_vectors, eval_labels, 'eval_' + ds.name + '_' +  model.name + '_knn', True)
-        range_search.compute_and_save(eval_vectors, eval_labels, 'eval_' + ds.name + '_' +  model.name + '_range', True)
+    # if params.compute_stats:
+    #     knn_search.compute_and_save(eval_vectors, eval_labels, 'eval_' + ds_name + '_' +  model.name + '_knn', True)
+    #     range_search.compute_and_save(eval_vectors, eval_labels, 'eval_' + ds_name + '_' +  model.name + '_range', True)
 
     if params.project_vectors:
-        project_embeddings(eval_vectors, eval_labels, 'eval_' + ds.name + '_' +  model.name)
+        project_embeddings(eval_vectors, eval_labels, 'eval_' + ds_name + '_' +  model.name)
 
 
-def load_embeddings(model: Model, ds: AbsDataset, seed: str) -> tuple[np.ndarray, np.ndarray]:
-    save_file = get_datadir(model.name + '_' + ds.name + '_' + seed)
+def load_embeddings(model: Model, ds: tf.data.Dataset, ds_name: str, seed: str) -> tuple[np.ndarray, np.ndarray]:
+    save_file = get_datadir(model.name + '_' + ds_name + '_' + seed)
     if save_file.exists():
         return load_vectors(save_file)
     else:
         print('Calculating embeddings...')
-        vectors, labels = calc_vectors(ds.get_train(), model)
+        vectors, labels = calc_vectors(ds, model)
         save_vectors(vectors, labels, save_file)
         return vectors, labels
 
@@ -83,12 +90,7 @@ def load_embeddings(model: Model, ds: AbsDataset, seed: str) -> tuple[np.ndarray
 if __name__ == "__main__":
     params = SiameseCliParams.parse()
 
-    dataset = params.get_dataset( # Model train dataset
-        image_size=params.get_model_class().get_target_shape(),
-        map_fn=params.get_model_class().preprocess_input
-    )
-
-    emb_model = load_cnn(params, dataset).get_embedding_model()
+    emb_model = load_cnn(params).get_embedding_model()
     emb_model.summary()
 
     if params.eval_dataset is not None:
@@ -97,6 +99,6 @@ if __name__ == "__main__":
             map_fn=params.get_model_class().preprocess_input
         )
 
-        evaluate_combined(params, emb_model, eval_ds)
+        evaluate(params, emb_model, eval_ds.get_combined(), eval_ds.name)
 
     print('Done!\n')

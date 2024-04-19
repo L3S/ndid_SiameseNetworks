@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from typing import Tuple, Callable, List
 
 PRINT_SIZE = True
 DEFAULT_BATCH_SIZE = 32
@@ -8,11 +7,11 @@ DEFAULT_BATCH_SIZE = 32
 class AbsDataset(ABC):
     def __init__(self,
                  name: str,
-                 classes: List[str] = None,
-                 image_size: Tuple[int, int] = None,
+                 classes: list[str] = None,
+                 image_size: tuple[int, int] = None,
                  num_classes: int = None,
                  batch_size: int = None,
-                 map_fn: Callable = None):
+                 map_fn: callable = None):
         self.name = name
         self.classes = classes
         self.num_classes = num_classes

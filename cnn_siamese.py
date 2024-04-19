@@ -10,7 +10,7 @@ import logging as log
 import tensorflow as tf
 from tensorflow.keras import Model
 
-from cnn_base import evaluate_combined, load_cnn, load_embeddings
+from cnn_base import evaluate, load_cnn, load_embeddings
 from sidd import SiameseCliParams
 from sidd.data import AbsDataset
 from sidd.utils.common import get_modeldir
@@ -22,10 +22,10 @@ def load_siamesecnn(params: SiameseCliParams, ds: AbsDataset, train = True) -> M
         return tf.keras.models.load_model(model_file)
     elif train:
         print('Inference model does not exist, training...')
-        emb_model = load_cnn(params, ds).get_embedding_model()
+        emb_model = load_cnn(params).get_embedding_model()
         emb_model.summary()
 
-        vectors, labels = load_embeddings(emb_model, ds, params.seed)
+        vectors, labels = load_embeddings(emb_model, ds.get_train(), ds.name, params.seed)
 
         emb_ds = params.get_siamese_class().prepare_dataset(vectors, labels)
         siamese_model = params.get_siamese_class()(embedding_model=emb_model, image_vector_dimensions=params.dimensions,
@@ -51,14 +51,18 @@ if __name__ == "__main__":
         map_fn=params.get_model_class().preprocess_input
     )
 
-    inference_model = load_siamesecnn()
+    inference_model = load_siamesecnn(params, dataset)
 
     if params.eval_dataset is not None:
+        print('Evaluating on combined dataset...')
         eval_ds = params.get_eval_dataset( # Evaluation dataset
             image_size=params.get_model_class().get_target_shape(),
             map_fn=params.get_model_class().preprocess_input
         )
 
-        evaluate_combined(params, inference_model, eval_ds)
+        evaluate(params, inference_model, eval_ds.get_combined(), eval_ds.name)
+    else:
+        print('Evaluating on test dataset...')
+        evaluate(params, inference_model, dataset.get_test(), dataset.name)
 
     print('Done!\n')
