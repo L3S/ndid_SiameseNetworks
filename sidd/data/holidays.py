@@ -1,7 +1,9 @@
+import math
 import tensorflow as tf
 from glob import glob
 from sidd.utils.common import get_dataset
 from sidd.data import AbsDataset
+from sidd.utils.plot_dataset import plot_label, plot_sample
 
 DEFAULT_BATCH_SIZE = 32
 DEFAULT_IMAGE_SIZE = (286, 294)
@@ -14,21 +16,6 @@ class Holidays(AbsDataset):
     def get_classes(self):
         raise NotImplementedError()
 
-    def get_num_classes(self):
-        raise NotImplementedError()
-
-    def get_train(self):
-        raise NotImplementedError()
-
-    def get_val(self):
-        raise NotImplementedError()
-
-    def get_test(self):
-        raise NotImplementedError()
-
-    def get_combined(self):
-        return super().get_train()
-
     def _load_dataset(self, image_size, batch_size, map_fn):
         def load(path):
             image_raw = tf.io.read_file(path)
@@ -38,15 +25,29 @@ class Holidays(AbsDataset):
             label = tf.strings.split(path, '/')[-1]
             label = tf.strings.split(label, '.', 1)[0]
             label = tf.strings.to_number(label, tf.int32)
+            # use the same label for all images of each kind
+            label = tf.math.floordiv(label, 100)
             return resized, label
 
-        dataset_path_glob = glob(str(get_dataset('holidays')) + '/*.jpg')
-        train_ds = tf.data.Dataset.from_tensor_slices(dataset_path_glob).map(load)
+        dataset_path_glob = glob(str(get_dataset('inria_holidays/images')) + '/*.jpg')
+        ds = tf.data.Dataset.from_tensor_slices(dataset_path_glob).map(load)
 
         if batch_size is not None:
-            train_ds = train_ds.batch(batch_size)
+            ds = ds.batch(batch_size)
 
         if map_fn is not None:
-            train_ds = train_ds.map(map_fn).prefetch(tf.data.AUTOTUNE)
+            ds = ds.map(map_fn).prefetch(tf.data.AUTOTUNE)
+    
+        ds_size = ds.cardinality().numpy()
+        self.num_classes = math.floor(ds_size / 4)
 
-        return train_ds, None, None
+        train_ds = ds.take(ds_size * 0.6)
+        val_ds = ds.skip(ds_size * 0.6).take(ds_size * 0.2)
+        test_ds = ds.skip(ds_size * 0.6).skip(ds_size * 0.2)
+        return train_ds, val_ds, test_ds
+
+
+if __name__ == "__main__":
+    ds = Holidays().get_combined()
+    plot_sample(ds)
+    plot_label(ds, 1473)

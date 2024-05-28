@@ -7,7 +7,7 @@
 #SBATCH --mem=16G                   # Amount of RAM memory requested
 
 source /etc/bashrc.d/mamba.sh
-mamba activate tf
+micromamba activate tf
 
 python3 /home/astappiev/nsir/cnn_base.py "$@"
 
