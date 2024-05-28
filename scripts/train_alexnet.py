@@ -1,8 +1,12 @@
 import time
 import os
+import sys
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.dirname(SCRIPT_DIR))
+
 import tensorflow as tf
 from sidd.model.alexnet import create_alexnet_model
-from tensorflow.keras import layers, Sequential, Model
 import tensorflow_datasets as tfds
 import matplotlib.pyplot as plt
 import numpy as np
