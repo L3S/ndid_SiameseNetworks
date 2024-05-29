@@ -72,8 +72,8 @@ class SiameseOfflineTripletModel(Model):
         if epochs is None:
             epochs = self.fit_epochs
 
-        if num_classes is not None and 'class_weight' not in kwargs:
-            kwargs = dict(kwargs, class_weight={0: 1 / num_classes, 1: (num_classes - 1) / num_classes})
+        #if num_classes is not None and 'class_weight' not in kwargs:
+        #    kwargs = dict(kwargs, class_weight={0: 1 / num_classes, 1: (num_classes - 1) / num_classes})
 
         return super().fit(x=x, y=y, epochs=epochs, steps_per_epoch=steps_per_epoch, callbacks=callbacks, **kwargs)
 
