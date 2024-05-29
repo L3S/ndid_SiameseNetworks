@@ -12,7 +12,7 @@ EMBEDDING_VECTOR_DIMENSION = 4096
 
 
 class VGG16Model(Model):
-    def __init__(self, input_shape=TARGET_SHAPE, num_classes=10, weights="imagenet", train_size=None, **kwargs):
+    def __init__(self, input_shape=TARGET_SHAPE, num_classes=10, weights=None, **kwargs):
         if weights == "imagenet":
             model = tf.keras.applications.VGG16(
                 include_top=True,
@@ -20,7 +20,7 @@ class VGG16Model(Model):
                 weights="imagenet",
             )
             model.trainable = False
-        elif weights == "imagenetplus":
+        elif weights == "finetune":
             core = tf.keras.applications.VGG16(
                 include_top=False,
                 input_shape=input_shape + (3,),
@@ -45,16 +45,16 @@ class VGG16Model(Model):
             )
 
         super(VGG16Model, self).__init__(inputs=model.input, outputs=model.output, name='vgg16')
-        self.train_size = train_size
 
     def compile(self,
                 optimizer=None,
                 loss=tf.keras.losses.SparseCategoricalCrossentropy(),
                 metrics=['accuracy'],
+                train_size=None,
                 **kwargs):
 
-        if optimizer is None and self.train_size is not None:
-            pretrain_steps = PRETRAIN_EPOCHS * self.train_size
+        if optimizer is None and train_size is not None:
+            pretrain_steps = PRETRAIN_EPOCHS * train_size
             optimizer = tf.keras.optimizers.RMSprop(tf.keras.optimizers.schedules.CosineDecay(1e-3, pretrain_steps))
         elif optimizer is None:
             optimizer = tf.keras.optimizers.RMSprop()

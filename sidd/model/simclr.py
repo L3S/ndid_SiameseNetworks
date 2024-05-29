@@ -9,7 +9,7 @@ TARGET_SHAPE = (224, 224)
 
 
 class SimclrModel(Model):
-    def __init__(self, input_shape=TARGET_SHAPE, num_classes=1000, weights="imagenet", train_size=None, **kwargs):
+    def __init__(self, input_shape=TARGET_SHAPE, num_classes=1000, weights=None, **kwargs):
         if weights == "imagenet":
             self.saved_model = tf.saved_model.load('./models/simclr')
             super(SimclrModel, self).__init__(name='simclr')

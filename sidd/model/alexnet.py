@@ -48,7 +48,7 @@ def create_alexnet_model(input_shape, num_classes, include_top=True):
 
 class AlexNetModel(Model):
 
-    def __init__(self, input_shape=TARGET_SHAPE, num_classes=10, weights="imagenet", train_size=None, **kwargs):
+    def __init__(self, input_shape=TARGET_SHAPE, num_classes=10, weights=None, **kwargs):
         if weights == "imagenet":
             model = create_alexnet_model(
                 input_shape=input_shape + (3,),
@@ -56,7 +56,7 @@ class AlexNetModel(Model):
             )
             model.load_weights(get_weightsdir('alexnet_imagenet'))
             model.trainable = False
-        elif weights == "imagenetplus":
+        elif weights == "finetune":
             core = create_alexnet_model(
                 input_shape=input_shape + (3,),
                 num_classes=1000,

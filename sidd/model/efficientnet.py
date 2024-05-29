@@ -12,7 +12,7 @@ EMBEDDING_VECTOR_DIMENSION = 1280
 
 
 class EfficientNetModel(Model):
-    def __init__(self, input_shape=TARGET_SHAPE, num_classes=10, weights="imagenet", train_size=None, **kwargs):
+    def __init__(self, input_shape=TARGET_SHAPE, num_classes=10, weights=None, **kwargs):
         if weights == "imagenet":
             model = tf.keras.applications.EfficientNetV2S(
                 include_top=True,
@@ -20,7 +20,7 @@ class EfficientNetModel(Model):
                 weights="imagenet",
             )
             model.trainable = False
-        elif weights == "imagenetplus":
+        elif weights == "finetune":
             core = tf.keras.applications.EfficientNetV2S(
                 include_top=False,
                 input_shape=input_shape + (3,),
@@ -51,16 +51,16 @@ class EfficientNetModel(Model):
             )
 
         super(EfficientNetModel, self).__init__(inputs=model.input, outputs=model.output, name='efficientnet')
-        self.train_size = train_size
 
     def compile(self,
                 optimizer=None,
                 loss=tf.keras.losses.SparseCategoricalCrossentropy(),
                 metrics=['accuracy'],
+                train_size=None,
                 **kwargs):
 
-        if optimizer is None and self.train_size is not None:
-            pretrain_steps = PRETRAIN_EPOCHS * self.train_size
+        if optimizer is None and train_size is not None:
+            pretrain_steps = PRETRAIN_EPOCHS * train_size
             optimizer = tf.keras.optimizers.RMSprop(tf.keras.optimizers.schedules.CosineDecay(1e-3, pretrain_steps))
         elif optimizer is None:
             optimizer = tf.keras.optimizers.RMSprop()

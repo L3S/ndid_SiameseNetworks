@@ -123,7 +123,7 @@ def create_vit_classifier(input_shape, num_classes):
 
 
 class VitModel(Model):
-    def __init__(self, input_shape=TARGET_SHAPE, num_classes=10, weights="imagenet", train_size=None, **kwargs):
+    def __init__(self, input_shape=TARGET_SHAPE, num_classes=10, weights="imagenet", **kwargs):
         model = create_vit_classifier(input_shape=input_shape + (3,), num_classes=num_classes)
 
         super(VitModel, self).__init__(inputs=model.input, outputs=model.output, name='vit')

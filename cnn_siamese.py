@@ -1,7 +1,8 @@
 # This script evaluates SiameseCNN on evaluation dataset.
 # Required parameters:
-#   --model: CNN model name
-#   --dataset: Dataset name (used to load weight)
+#   --cnn-model: CNN model
+#   --cnn-dataset: CNN Dataset name (used to load weight)
+#   --dataset: Datased on which SiameseCNN was trained
 #   --eval-dataset: Evaluation dataset name
 #   --seed: A seed (for loading weights or training)
 
@@ -60,7 +61,7 @@ if __name__ == "__main__":
             map_fn=params.get_model_class().preprocess_input
         )
 
-        evaluate(params, inference_model, eval_ds.get_combined(), eval_ds.name)
+        evaluate(params, inference_model, eval_ds.get_combined(), eval_ds.name + '-full')
     else:
         print('Evaluating on test dataset...')
         evaluate(params, inference_model, dataset.get_test(), dataset.name)

@@ -1,21 +1,15 @@
 import tensorflow as tf
 from glob import glob
 from sidd.utils.common import get_dataset
+from sidd.utils.plot_dataset import plot_label, plot_sample
 from sidd.data import AbsDataset
-from sidd.utils.plot_dataset import plot_sample, plot_label
 import numpy as np
 import os.path
-from tqdm import tqdm
+
 
 DEFAULT_BATCH_SIZE = 32
 DEFAULT_IMAGE_SIZE = (500, 500)
 
-# MirFlickr labels combines three sources:
-#   - duplicates - contains identical images
-#   - IND-clusters (Identical Near Duplicates): Near duplicates which are derived from the same image through transformation (cropping, rotation, rescaling etc.)
-#   - NIND-clusters (Non-Identical Near Duplicates): share same content but differ in illumination, subject movement, viewpoint.
-#
-# You can find below a code snippet which makes 'class'-Labels out of these files.
 
 def produce_labels():
     class_label = 1
@@ -43,11 +37,13 @@ def produce_labels():
     unassigned_entries = (labels[labels==0]).shape[0]
     add_labels = np.arange(max_labels+1, max_labels+unassigned_entries+1)
     labels[labels==0] = add_labels
+
+    labels = labels[0:25000]
     return labels
 
 
 def read_labels():
-    path = str(get_dataset('mirflickr')) + '/labels.txt'
+    path = str(get_dataset('mirflickr25k')) + '/labels.txt'
     if os.path.isfile(path):
         return np.loadtxt(path, dtype=int)
     else:
@@ -56,9 +52,9 @@ def read_labels():
         return labels
 
 
-class Mirflickr(AbsDataset):
+class Mirflickr25k(AbsDataset):
     def __init__(self, image_size=DEFAULT_IMAGE_SIZE, batch_size=DEFAULT_BATCH_SIZE, map_fn=None):
-        super(Mirflickr, self).__init__(name='mirflickr', classes=[], image_size=image_size, batch_size=batch_size, map_fn=map_fn)
+        super(Mirflickr25k, self).__init__(name='mirflickr25k', classes=[], image_size=image_size, batch_size=batch_size, map_fn=map_fn)
 
     def get_classes(self):
         raise NotImplementedError()
@@ -66,17 +62,18 @@ class Mirflickr(AbsDataset):
     def _load_dataset(self, image_size, batch_size, map_fn):
         def load(path):
             image_raw = tf.io.read_file(path)
-            decoded = tf.image.decode_jpeg(image_raw, channels=3, try_recover_truncated=True, acceptable_fraction=0.5)
+            decoded = tf.image.decode_jpeg(image_raw, channels=3)
             resized = tf.image.resize(decoded, image_size, method='nearest')
 
             name = tf.strings.split(path, '/')[-1]
             name = tf.strings.split(name, '.', 1)[0]
+            name = tf.strings.substr(name, 2, -1) # remove 'im'
             name = tf.strings.to_number(name, tf.int32)
-            label = tf.py_function(lambda name: labels[name.numpy()], [name], tf.int32)
+            label = tf.py_function(lambda name: labels[name.numpy() - 1], [name], tf.int32)
             return resized, label
 
         labels = read_labels()
-        dataset_path_glob = glob(str(get_dataset('mirflickr')) + '/images/*/*.jpg')
+        dataset_path_glob = glob(str(get_dataset('mirflickr25k')) + '/images/*.jpg')
         ds = tf.data.Dataset.from_tensor_slices(dataset_path_glob).map(load)
 
         if batch_size is not None:
@@ -94,15 +91,7 @@ class Mirflickr(AbsDataset):
 
 
 if __name__ == "__main__":
-    ds = Mirflickr().get_combined()
+    ds = Mirflickr25k().get_combined()
 
-    #plot_sample(ds)
-    plot_label(ds, 9267)
-    #plot_label(ds, 126479)
-
-    #for path, label in tqdm(ds.unbatch()):
-        #print(path)
-    # path = '/home/astappiev/nsir/datasets/mirflickr/images/68/686806.jpg'
-    # image_raw = tf.io.read_file(path)
-    # decoded = tf.image.decode_jpeg(image_raw, channels=3, try_recover_truncated=True, acceptable_fraction=0.5)
-    # resized = tf.image.resize(decoded, DEFAULT_IMAGE_SIZE, method='nearest')
+    plot_sample(ds)
+    plot_label(ds, 4430)

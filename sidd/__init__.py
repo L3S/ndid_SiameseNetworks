@@ -1,10 +1,11 @@
 import time
 import argparse
 from sidd.data.californiand import CaliforniaND
+from sidd.data.copydays import CopyDays
 from sidd.data.holidays import Holidays
 from sidd.data.imagenet1k import ImageNet1k
-from sidd.data.mirflickr import MFND
-from sidd.data.mirflickr_full import MFNDFull
+from sidd.data.mirflickr25k import Mirflickr25k
+from sidd.data.mirflickr import Mirflickr
 from sidd.data.simple3 import Simple3
 from sidd.data.imagenette import Imagenette
 from sidd.data.cifar10 import Cifar10
@@ -21,28 +22,31 @@ from sidd.model.vgg16 import VGG16Model
 from sidd.model.vit import VitModel
 
 parser = argparse.ArgumentParser()
-# Model params
-parser.add_argument("--dataset", "-D", help="Dataset", default="simple3",
-                    choices=["simple3", "cifar10", "imagenette", "imagenet", "ukbench", "holidays", "mirflickr", "mirflickr-full", "californiand"], type=str)
-parser.add_argument("--model", "-M", help="Model", default="alexnet",
+# CNN model params
+parser.add_argument("--cnn-model", "-CM", help="CNN Model", default="alexnet",
                     choices=["alexnet", "efficientnet", "mobilenet", "resnet", "vgg16", "vit", "simclr"], type=str)
-parser.add_argument("--weights", "-W", help="Weights", default="imagenet",
-                    choices=["imagenet", "imagenetplus", "dataset"], type=str)
-parser.add_argument("--loss", "-l", help="Loss function", default="contrastive",
+parser.add_argument("--cnn-weights", "-CW", help="CNN Weights", default="load",
+                    choices=["load", "train", "finetune"], type=str)
+parser.add_argument("--cnn-dataset", "-CD", help="CNN Dataset", default="imagenet",
+                    choices=["simple3", "cifar10", "imagenette", "imagenet"], type=str)
+
+# Siamese model params
+parser.add_argument("--dataset", "-D", help="Siamese Dataset", default="ukbench",
+                    choices=["ukbench", "holidays", "mirflickr", "mirflickr25k", "californiand", "copydays"], type=str)
+parser.add_argument("--loss", "-l", help="Siamese Loss function", default="contrastive",
                     choices=["contrastive", "easy-triplet", "semi-hard-triplet", "hard-triplet"], type=str)
-parser.add_argument("--margin", "-m", help="Margin for the loss function", default=1.5, type=float)
-parser.add_argument("--dimensions", "-d", help="The dimension of Siamese output", default=512, type=int)
-parser.add_argument("--epochs", "-e", help="Number of epochs, each epoch consists of 100 steps", default=15, type=int)
+parser.add_argument("--margin", "-m", help="Siamese margin for the loss function", default=1.5, type=float)
+parser.add_argument("--dimensions", "-d", help="Siamese output dimension", default=512, type=int)
+parser.add_argument("--epochs", "-e", help="Siamese number of epochs (each epoch consists of 100 steps)", default=15, type=int)
 
 # Evaluation params
 parser.add_argument("--eval-dataset", "-ED", help="Evaluation datasets", default="ukbench",
-                    choices=["ukbench", "holidays", "mirflickr", "mirflickr-full", "californiand"], type=str)
+                    choices=["ukbench", "holidays", "mirflickr", "mirflickr25k", "californiand", "copydays"], type=str)
 
 # other params
 parser.add_argument("--seed", "-s", help="Set seed value", default="", type=str)
 
 # what to save
-parser.add_argument("--cnn-vectors", help="Save CNN's embeddings", default=False, type=bool)
 parser.add_argument("--save-vectors", help="Save embeddings", default=False, type=bool)
 parser.add_argument("--compute-stats", help="Compute FAISS statistical analysis", default=False, type=bool)
 parser.add_argument("--project-vectors", help="Project embeddings", default=False, type=bool)
@@ -53,18 +57,20 @@ class SiameseCliParams:
     def parse(cls):
         args = parser.parse_args()
         print('Params received: {}'.format(args))
-        return cls(args.dataset, args.model, args.weights,
-                   args.loss, args.margin, args.dimensions, args.epochs,
+        return cls(args.cnn_model, args.cnn_weights, args.cnn_dataset,
+                   args.dataset, args.loss, args.margin, args.dimensions, args.epochs,
                    args.eval_dataset, args.seed,
-                   args.cnn_vectors, args.save_vectors, args.project_vectors, args.compute_stats)
+                   args.save_vectors, args.project_vectors, args.compute_stats)
 
-    def __init__(self, dataset, model, weights,
-                 loss, margin, dimensions, epochs,
+    def __init__(self, cnn_model, cnn_weights, cnn_dataset,
+                 dataset, loss, margin, dimensions, epochs,
                  eval_dataset, seed,
-                 cnn_vectors, save_vectors, project_vectors, compute_stats):
+                 save_vectors, project_vectors, compute_stats):
+        self.cnn_model = cnn_model
+        self.cnn_weights = cnn_weights
+        self.cnn_dataset = cnn_dataset
+
         self.dataset = dataset
-        self.model = model
-        self.weights = weights
         self.loss = loss
         self.margin = margin
         self.dimensions = dimensions
@@ -72,7 +78,6 @@ class SiameseCliParams:
 
         self.eval_dataset = eval_dataset
 
-        self.cnn_vectors = cnn_vectors
         self.save_vectors = save_vectors
         self.project_vectors = project_vectors
         self.compute_stats = compute_stats
@@ -83,18 +88,19 @@ class SiameseCliParams:
             self.seed = str(int(time.time()))
 
         # Construct model names
-        core_name = model
-        if weights == "imagenet":
-            core_name += '_' + weights
-        elif weights == "imagenetplus":
-            core_name += '_' + weights + dataset
+        core_name = cnn_model
+        if cnn_weights == "finetune":
+            core_name += '_imagenetF' + dataset
         else:
             core_name += '_' + dataset
 
         self.cnn_name = core_name + '_' + self.seed
-        if weights == "imagenet":
+        if cnn_weights == "load":
             self.cnn_name = core_name
         self.siamesecnn_name = core_name + '_d' + str(dimensions) + '_m' + str(margin) + '_s' + str(epochs * 100) + '_' + loss + '_' + self.seed
+
+    def get_cnn_dataset(self, **kwargs):
+        return self.get_dataset_class(self.cnn_dataset)(**kwargs)
 
     def get_dataset(self, **kwargs):
         return self.get_dataset_class(self.dataset)(**kwargs)
@@ -115,10 +121,12 @@ class SiameseCliParams:
             cls = UKBench
         elif dsname == "holidays":
             cls = Holidays
+        elif dsname == "mirflickr25k":
+            cls = Mirflickr25k
         elif dsname == "mirflickr":
-            cls = MFND
-        elif dsname == "mirflickr-full":
-            cls = MFNDFull
+            cls = Mirflickr
+        elif dsname == "copydays":
+            cls = CopyDays
         elif dsname == "californiand":
             cls = CaliforniaND
         else:
@@ -126,19 +134,19 @@ class SiameseCliParams:
         return cls
 
     def get_model_class(self):
-        if self.model == "alexnet":
+        if self.cnn_model == "alexnet":
             cls = AlexNetModel
-        elif self.model == "efficientnet":
+        elif self.cnn_model == "efficientnet":
             cls = EfficientNetModel
-        elif self.model == "mobilenet":
+        elif self.cnn_model == "mobilenet":
             cls = MobileNetModel
-        elif self.model == "resnet":
+        elif self.cnn_model == "resnet":
             cls = ResNetModel
-        elif self.model == "vgg16":
+        elif self.cnn_model == "vgg16":
             cls = VGG16Model
-        elif self.model == "vit":
+        elif self.cnn_model == "vit":
             cls = VitModel
-        elif self.model == "simclr":
+        elif self.cnn_model == "simclr":
             cls = SimclrModel
         else:
             raise ValueError("Model not found")

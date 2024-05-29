@@ -1,7 +1,8 @@
 # This script evaluates a trained CNN model (or trains CNN model if weights are not available) on the evaluation dataset.
 # Required parameters:
-#   --model: CNN model name
-#   --dataset: Dataset name (used to load weight or train model)
+#   --cnn-model: model name
+#   --cnn-weights: how weights are loaded (load, train, finetune)
+#   --cnn-dataset: dataset name (used to load weight or train model)
 #   --eval-dataset: Evaluation dataset name
 #   --seed: A seed (for loading weights or training)
 
@@ -23,6 +24,7 @@ log.basicConfig(filename="logfile.log", level=log.INFO, format='%(asctime)s %(me
 
 def train_cnn(model: Model, ds: AbsDataset):
     start = time.time()
+    model.compile(train_size=len(ds.get_train()))
     model.fit(ds.get_train(), validation_data=ds.get_val())
     log.info('Model %s trained in %ss', model.name, time.time() - start)
 
@@ -32,22 +34,22 @@ def train_cnn(model: Model, ds: AbsDataset):
 
 
 def load_cnn(params: SiameseCliParams, train = True) -> Model:
-    if params.weights == 'imagenet':
-        model = params.get_model(weights=params.weights)
+    if params.cnn_weights == 'load' and params.cnn_dataset == 'imagenet':
+        model = params.get_model(weights="imagenet")
         model.compile()
         print('Alexnet model loaded, skipping training.')
     else:
-        dataset = params.get_dataset( # Model train dataset
+        dataset = params.get_cnn_dataset( # Model train dataset
             image_size=params.get_model_class().get_target_shape(),
             map_fn=params.get_model_class().preprocess_input
         )
 
-        model = params.get_model(train_size=len(dataset.get_train()), num_classes=dataset.num_classes, weights=params.weights)
-        model.compile()
+        model = params.get_model(num_classes=dataset.num_classes, weights=params.cnn_weights)
 
         model_file = get_modeldir(params.cnn_name + '.h5')
         if model_file.exists():
             print('Loading model weights from %s', model_file)
+            model.compile()
             model.load_weights(model_file)
             print('Model weights loaded.')
         elif train:

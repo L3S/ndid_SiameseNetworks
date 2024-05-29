@@ -11,7 +11,7 @@ MODEL_URL = "https://tfhub.dev/sayakpaul/vit_s16_fe/1"
 
 
 class VitModel(Model):
-    def __init__(self, input_shape=TARGET_SHAPE, num_classes=10, weights="imagenet", train_size=None, **kwargs):
+    def __init__(self, input_shape=TARGET_SHAPE, num_classes=10, weights=None, **kwargs):
         if weights == "imagenet":
             model = Sequential([hub.KerasLayer(MODEL_URL, trainable=False)])
             model.build((None,) + TARGET_SHAPE + (3,))
