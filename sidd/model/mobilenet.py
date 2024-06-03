@@ -63,7 +63,7 @@ class MobileNetModel(Model):
         return super().fit(x=x, y=y, batch_size=batch_size, epochs=epochs, callbacks=callbacks, **kwargs)
 
     def get_embedding_model(self):
-        core = Model(inputs=self.input, outputs=self.layers[-2].output)
+        core = Model(inputs=self.input, outputs=self.layers[-2].output, name=self.name + '_emb')
         for layer in core.layers:
             layer.trainable = False
         return core

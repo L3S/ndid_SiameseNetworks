@@ -83,7 +83,7 @@ def load_embeddings(model: Model, ds: tf.data.Dataset, ds_name: str, seed: str) 
     if save_file.exists():
         return load_vectors(save_file)
     else:
-        print('Calculating embeddings...')
+        print('Calculating embeddings...', save_file)
         vectors, labels = calc_vectors(ds, model)
         save_vectors(vectors, labels, save_file)
         return vectors, labels

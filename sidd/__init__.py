@@ -40,7 +40,7 @@ parser.add_argument("--dimensions", "-d", help="Siamese output dimension", defau
 parser.add_argument("--epochs", "-e", help="Siamese number of epochs (each epoch consists of 100 steps)", default=15, type=int)
 
 # Evaluation params
-parser.add_argument("--eval-dataset", "-ED", help="Evaluation datasets", default="ukbench",
+parser.add_argument("--eval-dataset", "-ED", help="Evaluation datasets",
                     choices=["ukbench", "holidays", "mirflickr", "mirflickr25k", "californiand", "copydays"], type=str)
 
 # other params

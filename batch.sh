@@ -23,7 +23,7 @@ dimensions=512
 # Train Siamese on ND datasets
 for i in {1..3}; do
   for model in "alexnet" "efficientnet" "mobilenet" "resnet" "vgg16" "vit"; do
-    for dataset in "copydays"; do # "ukbench", "copydays", "holidays", "californiand", "mirflickr"
+    for dataset in "ukbench" "copydays" "holidays" "californiand" "mirflickr"; do # "ukbench" "copydays" "holidays" "californiand" "mirflickr"
       for margin in "1" "1.5" "2"; do # "1" "1.5" "2"
         for loss in "contrastive" "semi-hard-triplet" "hard-triplet"; do
           for epochs in "10" "20" "30"; do # "10" "20" "30"
@@ -38,7 +38,7 @@ done
 # Evaluate SiameseCNNs on ND datasets
 # for i in {1..3}; do
 #   for model in "alexnet" "efficientnet" "mobilenet" "resnet" "vgg16" "vit"; do
-#     for dataset in "ukbench", "copydays", "holidays", "californiand", "mirflickr"; do
+#     for dataset in "ukbench" "copydays" "holidays" "californiand" "mirflickr"; do
 #       for margin in "1"; do
 #         for loss in "semi-hard-triplet"; do
 #           for epochs in "10"; do
