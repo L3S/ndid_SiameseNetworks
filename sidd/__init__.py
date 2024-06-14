@@ -35,9 +35,9 @@ parser.add_argument("--dataset", "-D", help="Siamese Dataset", default="ukbench"
                     choices=["ukbench", "holidays", "mirflickr", "mirflickr25k", "californiand", "copydays"], type=str)
 parser.add_argument("--loss", "-l", help="Siamese Loss function", default="contrastive",
                     choices=["contrastive", "easy-triplet", "semi-hard-triplet", "hard-triplet"], type=str)
-parser.add_argument("--margin", "-m", help="Siamese margin for the loss function", default=1.5, type=float)
-parser.add_argument("--dimensions", "-d", help="Siamese output dimension", default=512, type=int)
-parser.add_argument("--epochs", "-e", help="Siamese number of epochs (each epoch consists of 100 steps)", default=15, type=int)
+parser.add_argument("--margin", "-m", help="Siamese margin for the loss function", default=[1.5], type=float, nargs='*')
+parser.add_argument("--dimensions", "-d", help="Siamese output dimension", default=[512], type=int, nargs='*')
+parser.add_argument("--epochs", "-e", help="Siamese number of epochs (each epoch consists of 100 steps)", default=[15], type=int, nargs='*')
 
 # Evaluation params
 parser.add_argument("--eval-dataset", "-ED", help="Evaluation datasets",
@@ -58,12 +58,14 @@ class SiameseCliParams:
         args = parser.parse_args()
         print('Params received: {}'.format(args))
         return cls(args.cnn_model, args.cnn_weights, args.cnn_dataset,
-                   args.dataset, args.loss, args.margin, args.dimensions, args.epochs,
+                   args.dataset, args.loss,
+                   args.margin, args.dimensions, args.epochs,
                    args.eval_dataset, args.seed,
                    args.save_vectors, args.project_vectors, args.compute_stats)
 
     def __init__(self, cnn_model, cnn_weights, cnn_dataset,
-                 dataset, loss, margin, dimensions, epochs,
+                 dataset, loss,
+                 margin, dimensions, epochs,
                  eval_dataset, seed,
                  save_vectors, project_vectors, compute_stats):
         self.cnn_model = cnn_model
@@ -88,16 +90,15 @@ class SiameseCliParams:
             self.seed = str(int(time.time()))
 
         # Construct model names
-        core_name = cnn_model
+        self.core_name = cnn_model
         if cnn_weights == "finetune":
-            core_name += '_imagenetF' + dataset
+            self.core_name += '_imagenetF' + dataset
         else:
-            core_name += '_' + dataset
+            self.core_name += '_' + dataset
 
-        self.cnn_name = core_name + '_' + self.seed
+        self.cnn_name = self.core_name + '_' + self.seed
         if cnn_weights == "load":
-            self.cnn_name = core_name
-        self.siamesecnn_name = core_name + '_d' + str(dimensions) + '_m' + str(margin) + '_s' + str(epochs * 100) + '_' + loss + '_' + self.seed
+            self.cnn_name = self.core_name
 
     def get_cnn_dataset(self, **kwargs):
         return self.get_dataset_class(self.cnn_dataset)(**kwargs)

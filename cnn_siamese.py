@@ -9,7 +9,7 @@
 import time
 import logging as log
 import tensorflow as tf
-from tensorflow.keras import Model
+from functools import cache
 
 from cnn_base import evaluate, load_cnn, load_embeddings
 from sidd import SiameseCliParams
@@ -17,26 +17,49 @@ from sidd.data import AbsDataset
 from sidd.utils.common import get_modeldir
 
 
-def load_siamesecnn(params: SiameseCliParams, ds: AbsDataset, train = True) -> Model:
-    model_file = get_modeldir('siamese_inference_' + params.siamesecnn_name + '.tf')
+def siamese_name(params: SiameseCliParams, margin, dimensions, epochs) -> str:
+    return params.core_name + '_d' + str(dimensions) + '_m' + str(margin) + '_s' + str(epochs * 100) + '_' + params.loss + '_' + params.seed
+
+
+@cache
+def get_embedded(params: SiameseCliParams, ds: AbsDataset) -> tuple[tf.keras.Model, tf.data.Dataset]:
+    start = time.time()
+    emb_model = load_cnn(params).get_embedding_model()
+    emb_model.summary()
+
+    vectors, labels = load_embeddings(emb_model, ds.get_train(), ds.name, params.seed)
+    emb_ds = params.get_siamese_class().prepare_dataset(vectors, labels)
+    print('Embeddings calculated in %ss', time.time() - start)
+    return emb_model, emb_ds
+
+
+def load_siamesecnn(params: SiameseCliParams, ds: AbsDataset, train = True, margin=None, dimensions=None, epochs=None) -> tf.keras.Model:
+    if margin is None:
+        margin = params.margin[0]
+    if dimensions is None:
+        dimensions = params.dimensions[0]
+    if epochs is None:
+        epochs = params.epochs[0]
+
+    siamesecnn_name = siamese_name(params, margin, dimensions, epochs)
+
+    print('Loading SiameseCNN with margin %s, dimensions %s, epochs %s...', margin, dimensions, epochs)
+    model_file = get_modeldir('siamese_inference_' + siamesecnn_name + '.tf')
     if model_file.exists():
         return tf.keras.models.load_model(model_file)
     elif train:
         print('Inference model does not exist, training...')
-        emb_model = load_cnn(params).get_embedding_model()
-        emb_model.summary()
-
-        vectors, labels = load_embeddings(emb_model, ds.get_train(), ds.name, params.seed)
-
-        emb_ds = params.get_siamese_class().prepare_dataset(vectors, labels)
-        siamese_model = params.get_siamese_class()(embedding_model=emb_model, image_vector_dimensions=params.dimensions,
-                                            loss_margin=params.margin, fit_epochs=params.epochs, basename=params.siamesecnn_name)
-        siamese_model.compile(loss=params.get_loss_class())
+        start = time.time()
+        emb_model, emb_ds = get_embedded(params, ds)
+        siamese_model = params.get_siamese_class()(embedding_model=emb_model, basename=siamesecnn_name,
+                                                   image_vector_dimensions=dimensions, loss_margin=margin, fit_epochs=epochs)
+        siamese_model.compile(loss=params.get_loss_class(), optimizer=tf.keras.optimizers.RMSprop())
         siamese_model.summary()
 
-        start = time.time()
+        start_fit = time.time()
         siamese_model.fit(emb_ds, num_classes=ds.num_classes)
-        log.info('Siamese model %s trained in %ss', params.siamesecnn_name, time.time() - start)
+        print('Siamese model %s loaded & trained in %ss', siamesecnn_name, time.time() - start)
+        log.info('Siamese model %s trained in %ss', siamesecnn_name, time.time() - start_fit)
         siamese_model.inference_model.save(model_file)
         return siamese_model.inference_model
     else:
@@ -52,18 +75,22 @@ if __name__ == "__main__":
         map_fn=params.get_model_class().preprocess_input
     )
 
-    inference_model = load_siamesecnn(params, dataset)
+    for margin in params.margin:
+        for epochs in params.epochs:
+            for dimensions in params.dimensions:
 
-    if params.eval_dataset is not None:
-        print('Evaluating on combined dataset...')
-        eval_ds = params.get_eval_dataset( # Evaluation dataset
-            image_size=params.get_model_class().get_target_shape(),
-            map_fn=params.get_model_class().preprocess_input
-        )
+                inference_model = load_siamesecnn(params, dataset, margin=margin, dimensions=dimensions, epochs=epochs)
 
-        evaluate(params, inference_model, eval_ds.get_combined(), eval_ds.name + '-full')
-    else:
-        print('Evaluating on test dataset...')
-        evaluate(params, inference_model, dataset.get_test(), dataset.name)
+                if params.eval_dataset is not None:
+                    print('Evaluating on combined dataset...')
+                    eval_ds = params.get_eval_dataset( # Evaluation dataset
+                        image_size=params.get_model_class().get_target_shape(),
+                        map_fn=params.get_model_class().preprocess_input
+                    )
 
-    print('Done!\n')
+                    evaluate(params, inference_model, eval_ds.get_combined(), eval_ds.name + '-full')
+                else:
+                    print('Evaluating on test dataset...')
+                    evaluate(params, inference_model, dataset.get_test(), dataset.name)
+
+                print('Done!\n')

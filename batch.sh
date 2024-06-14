@@ -23,13 +23,9 @@ dimensions=512
 # Train Siamese on ND datasets
 for i in {1..3}; do
   for model in "alexnet" "efficientnet" "mobilenet" "resnet" "vgg16" "vit"; do
-    for dataset in "ukbench" "copydays" "holidays" "californiand" "mirflickr"; do # "ukbench" "copydays" "holidays" "californiand" "mirflickr"
-      for margin in "1" "1.5" "2"; do # "1" "1.5" "2"
-        for loss in "contrastive" "semi-hard-triplet" "hard-triplet"; do
-          for epochs in "10" "20" "30"; do # "10" "20" "30"
-            sbatch --job-name "sidd-$model-$dataset" ./eval_siamese.sh -CM $model -D $dataset -m $margin -l $loss -e $epochs -s exp$i --save-vectors True
-          done
-        done
+    for dataset in "mirflickr"; do # "ukbench" "copydays" "holidays" "californiand" "mirflickr"
+      for loss in "contrastive" "semi-hard-triplet" "hard-triplet"; do
+          sbatch --job-name "sidd-$model-$dataset" ./eval_siamese.sh -CM $model -D $dataset -l $loss -m 1 1.5 2 -e 10 20 30 -s exp$i --save-vectors True
       done
     done
   done
