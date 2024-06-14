@@ -10,7 +10,6 @@ import time
 import numpy as np
 import logging as log
 import tensorflow as tf
-from tensorflow.keras import Model
 
 # from nnfaiss import knn_search, range_search
 from sidd import SiameseCliParams
@@ -22,7 +21,7 @@ tf.get_logger().setLevel('INFO')
 log.basicConfig(filename="logfile.log", level=log.INFO, format='%(asctime)s %(message)s')
 
 
-def train_cnn(model: Model, ds: AbsDataset):
+def train_cnn(model: tf.keras.Model, ds: AbsDataset):
     start = time.time()
     model.compile(train_size=len(ds.get_train()))
     model.fit(ds.get_train(), validation_data=ds.get_val())
@@ -33,7 +32,7 @@ def train_cnn(model: Model, ds: AbsDataset):
         model.evaluate(ds.get_test())
 
 
-def load_cnn(params: SiameseCliParams, train = True) -> Model:
+def load_cnn(params: SiameseCliParams, train = True) -> tf.keras.Model:
     if params.cnn_weights == 'load' and params.cnn_dataset == 'imagenet':
         model = params.get_model(weights="imagenet")
         model.compile()
@@ -63,7 +62,7 @@ def load_cnn(params: SiameseCliParams, train = True) -> Model:
     return model
 
 
-def evaluate(params: SiameseCliParams, model: Model, ds: tf.data.Dataset, ds_name: str):
+def evaluate(params: SiameseCliParams, model: tf.keras.Model, ds: tf.data.Dataset, ds_name: str):
     print('Computing ' + ds_name + ' vectors...')
     eval_vectors, eval_labels = calc_vectors(ds, model)
 
@@ -78,7 +77,7 @@ def evaluate(params: SiameseCliParams, model: Model, ds: tf.data.Dataset, ds_nam
         project_embeddings(eval_vectors, eval_labels, 'eval_' + ds_name + '_' +  model.name)
 
 
-def load_embeddings(model: Model, ds: tf.data.Dataset, ds_name: str, seed: str) -> tuple[np.ndarray, np.ndarray]:
+def load_embeddings(model: tf.keras.Model, ds: tf.data.Dataset, ds_name: str, seed: str) -> tuple[np.ndarray, np.ndarray]:
     save_file = get_datadir(model.name + '_' + ds_name + '_' + seed)
     if save_file.exists():
         return load_vectors(save_file)

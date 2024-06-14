@@ -1,8 +1,8 @@
-from tensorflow.keras import Model
 from abc import ABC, abstractmethod
+import tensorflow as tf
 
 
-class AsbModel(ABC, Model):
+class AsbModel(ABC, tf.keras.Model):
 
     @staticmethod
     @abstractmethod
