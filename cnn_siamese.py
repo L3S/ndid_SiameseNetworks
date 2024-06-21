@@ -14,7 +14,7 @@ from functools import cache
 from cnn_base import evaluate, load_cnn, load_embeddings
 from sidd import SiameseCliParams
 from sidd.data import AbsDataset
-from sidd.utils.common import get_modeldir
+from sidd.utils.common import get_modeldir, get_vectorsdir
 
 
 def siamese_name(params: SiameseCliParams, margin, dimensions, epochs) -> str:
@@ -78,9 +78,9 @@ if __name__ == "__main__":
     for margin in params.margin:
         for epochs in params.epochs:
             for dimensions in params.dimensions:
-
                 inference_model = load_siamesecnn(params, dataset, margin=margin, dimensions=dimensions, epochs=epochs)
 
+                vectors_file = get_vectorsdir('eval_' + dataset.name + '_' +  inference_model.name + '_vectors' + '.pbz2')
                 if params.eval_dataset is not None:
                     print('Evaluating on combined dataset...')
                     eval_ds = params.get_eval_dataset( # Evaluation dataset
@@ -89,7 +89,7 @@ if __name__ == "__main__":
                     )
 
                     evaluate(params, inference_model, eval_ds.get_combined(), eval_ds.name + '-full')
-                else:
+                elif not vectors_file.exists():
                     print('Evaluating on test dataset...')
                     evaluate(params, inference_model, dataset.get_test(), dataset.name)
 
