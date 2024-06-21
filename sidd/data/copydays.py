@@ -28,7 +28,7 @@ class CopyDays(AbsDataset):
             label = tf.math.floordiv(name, 100)
             return resized, label
 
-        dataset_path_glob = glob(str(get_dataset('copydays')) + '/*/*.jpg')
+        dataset_path_glob = glob(str(get_dataset('copydays')) + '/combined/*.jpg')
         ds = tf.data.Dataset.from_tensor_slices(dataset_path_glob).map(load)
 
         if batch_size is not None:
