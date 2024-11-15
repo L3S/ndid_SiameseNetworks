@@ -25,7 +25,7 @@ def read_labels():
 
 class CaliforniaND(AbsDataset):
     def __init__(self, image_size=DEFAULT_IMAGE_SIZE, batch_size=DEFAULT_BATCH_SIZE, map_fn=None):
-        super(CaliforniaND, self).__init__(name='californiaND', classes=[], image_size=image_size, batch_size=batch_size, map_fn=map_fn)
+        super(CaliforniaND, self).__init__(name='californiand', classes=[], image_size=image_size, batch_size=batch_size, map_fn=map_fn)
 
     def get_classes(self):
         raise NotImplementedError()

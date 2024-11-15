@@ -41,7 +41,7 @@ parser.add_argument("--epochs", "-e", help="Siamese number of epochs (each epoch
 
 # Evaluation params
 parser.add_argument("--eval-dataset", "-ED", help="Evaluation datasets",
-                    choices=["ukbench", "holidays", "mirflickr", "mirflickr25k", "californiand", "copydays"], type=str)
+                    choices=["cifar10", "imagenette", "ukbench", "holidays", "mirflickr", "mirflickr25k", "californiand", "copydays"], type=str)
 
 # other params
 parser.add_argument("--seed", "-s", help="Set seed value", default="", type=str)

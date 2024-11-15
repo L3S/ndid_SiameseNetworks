@@ -92,7 +92,7 @@ if __name__ == "__main__":
     params = SiameseCliParams.parse()
 
     emb_model = load_cnn(params).get_embedding_model()
-    emb_model.summary()
+    #emb_model.summary()
 
     if params.eval_dataset is not None:
         eval_ds = params.get_eval_dataset( # Evaluation dataset

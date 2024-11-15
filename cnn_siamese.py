@@ -88,7 +88,9 @@ if __name__ == "__main__":
                         map_fn=params.get_model_class().preprocess_input
                     )
 
-                    evaluate(params, inference_model, eval_ds.get_combined(), eval_ds.name + '-full')
+                    vectors_file = get_vectorsdir('eval_' + eval_ds.name + '-full' + '_' +  inference_model.name + '_vectors' + '.pbz2')
+                    if not vectors_file.exists():
+                        evaluate(params, inference_model, eval_ds.get_combined(), eval_ds.name + '-full')
                 elif not vectors_file.exists():
                     print('Evaluating on test dataset...')
                     evaluate(params, inference_model, dataset.get_test(), dataset.name)
